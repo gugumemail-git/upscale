@@ -7,9 +7,8 @@
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#2563eb" />
 
-  <!-- TensorFlow.js & UpscalerJS ESRGAN (100% Gratis Client-Side AI) -->
+  <!-- TensorFlow.js & UpscalerJS (100% Gratis Client-Side AI) -->
   <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/default-model@1.0.0-beta.14/dist/umd/index.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/upscaler@1.0.0-beta.19/dist/browser/umd/upscaler.min.js"></script>
 
   <style>
@@ -52,7 +51,6 @@
     * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
     body { background: var(--bg-app); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; transition: background 0.2s, color 0.2s; }
 
-    /* Header */
     header {
       background: var(--bg-panel);
       border-bottom: 1px solid var(--border);
@@ -77,7 +75,6 @@
     }
     .header-actions { display: flex; gap: 0.5rem; align-items: center; }
 
-    /* Buttons */
     .btn {
       border: 1px solid var(--border);
       background: var(--bg-panel);
@@ -92,6 +89,7 @@
       justify-content: center;
       gap: 0.45rem;
       transition: all 0.15s;
+      white-space: nowrap;
     }
     .btn:hover:not(:disabled) { background: var(--bg-subtle); }
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
@@ -99,14 +97,15 @@
     .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
     .btn-ai {
       background: linear-gradient(135deg, var(--primary), var(--accent));
-      color: #fff;
+      color: #ffffff !important;
       border: none;
       box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
+      width: 100%;
+      min-height: 44px;
     }
     .btn-ai:hover:not(:disabled) { filter: brightness(1.08); }
     .btn-success { background: var(--success); color: #fff; border-color: var(--success); }
 
-    /* Workspace */
     .workspace {
       display: grid;
       grid-template-columns: 365px 1fr;
@@ -117,7 +116,6 @@
       .workspace { grid-template-columns: 1fr; }
     }
 
-    /* Sidebar */
     .sidebar {
       background: var(--bg-panel);
       border-right: 1px solid var(--border);
@@ -144,7 +142,6 @@
       align-items: center;
     }
 
-    /* Engine Cards */
     .engine-list { display: flex; flex-direction: column; gap: 0.45rem; }
     .engine-card {
       border: 2px solid var(--border);
@@ -183,7 +180,6 @@
       white-space: nowrap;
     }
 
-    /* Pills */
     .pill-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
     .pill {
       padding: 0.45rem;
@@ -219,7 +215,6 @@
       font-weight: 600;
     }
 
-    /* Info Box */
     .spec-box {
       background: var(--bg-subtle);
       border: 1px solid var(--border);
@@ -233,7 +228,6 @@
     .spec-row { display: flex; justify-content: space-between; }
     .spec-val { font-weight: 700; color: var(--text-main); }
 
-    /* Stage */
     .stage {
       display: flex;
       flex-direction: column;
@@ -288,7 +282,6 @@
     .dropzone h2 { font-size: 1.15rem; margin-bottom: 0.5rem; }
     .dropzone p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.45; }
 
-    /* Split Comparison */
     .compare-wrapper {
       position: relative;
       max-width: 100%;
@@ -358,7 +351,6 @@
     .tag-before { left: 12px; }
     .tag-after { right: 12px; background: rgba(37, 99, 235, 0.9); }
 
-    /* Batch Strip */
     .batch-strip {
       display: flex;
       gap: 0.6rem;
@@ -392,7 +384,6 @@
       font-weight: 700;
     }
 
-    /* Loader & Progress Bar */
     .loader-overlay {
       position: absolute;
       inset: 0;
@@ -432,7 +423,6 @@
     }
     @keyframes spin { to { transform: rotate(360deg); } }
 
-    /* Modal */
     .modal-backdrop {
       position: fixed;
       inset: 0;
@@ -487,7 +477,7 @@
         <div class="engine-card" data-engine="fast_local">
           <div>
             <div class="engine-title">⚡ Turbo Edge-Sharpen</div>
-            <div class="engine-desc">Pemrosesan instan 0 detik untuk file berukuran sangat besar.</div>
+            <div class="engine-desc">Pemrosesan instan 0 detik untuk file berukuran raksasa/banner.</div>
           </div>
           <span class="tag-free">INSTAN</span>
         </div>
@@ -555,7 +545,7 @@
       </select>
     </div>
 
-    <button class="btn btn-ai" id="btnProcess" disabled style="padding: 0.8rem; font-size: 0.95rem;">
+    <button class="btn btn-ai" id="btnProcess" disabled style="padding: 0.8rem; font-size: 0.92rem;">
       ✨ Proses Upscale AI Sekarang
     </button>
 
@@ -639,7 +629,6 @@
 </div>
 
 <script>
-  // State Aplikasi
   const state = {
     engine: 'esrgan_local',
     scale: 4,
@@ -734,6 +723,19 @@
     return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   }
 
+  // Menghitung dimensi aman agar tidak melewati batas maksimum HTML5 Canvas (12.000 px)
+  function getSafeTargetDimensions(origW, origH, scale) {
+    let tW = origW * scale;
+    let tH = origH * scale;
+    const MAX_DIM = 12000;
+    if (tW > MAX_DIM || tH > MAX_DIM) {
+      const ratio = Math.min(MAX_DIM / tW, MAX_DIM / tH);
+      tW = Math.round(tW * ratio);
+      tH = Math.round(tH * ratio);
+    }
+    return { tW, tH };
+  }
+
   function handleFiles(fileList) {
     Array.from(fileList).forEach(file => {
       if (!file.type.startsWith('image/')) return;
@@ -797,8 +799,7 @@
   function updateResolutionCalc() {
     const item = state.items[state.activeIndex];
     if (!item) return;
-    const tW = item.origW * state.scale;
-    const tH = item.origH * state.scale;
+    const { tW, tH } = getSafeTargetDimensions(item.origW, item.origH, state.scale);
 
     $('infoOrigRes').textContent = `${formatNum(item.origW)} × ${formatNum(item.origH)} px`;
     $('infoTargetRes').textContent = `${formatNum(tW)} × ${formatNum(tH)} px`;
@@ -867,23 +868,21 @@
     const bytes = new Uint8Array(binStr.length);
     for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
 
-    // 1. Jika JPEG: Ubah JFIF APP0 density menjadi 300x300 DPI (0x012C)
     if (mimeType === 'image/jpeg' && bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF && bytes[3] === 0xE0) {
-      bytes[13] = 0x01; // Unit: Dots Per Inch
-      bytes[14] = 0x01; bytes[15] = 0x2C; // X = 300
-      bytes[16] = 0x01; bytes[17] = 0x2C; // Y = 300
+      bytes[13] = 0x01;
+      bytes[14] = 0x01; bytes[15] = 0x2C;
+      bytes[16] = 0x01; bytes[17] = 0x2C;
       return uint8ToDataUrl(bytes, mimeType);
     }
 
-    // 2. Jika PNG: Sisipkan chunk pHYs (11811 px/meter = 300 DPI) setelah IHDR (byte ke-33)
     if (mimeType === 'image/png' && bytes[0] === 0x89 && bytes[1] === 0x50) {
       const physChunk = new Uint8Array([
-        0x00, 0x00, 0x00, 0x09, // Panjang data = 9 byte
-        0x70, 0x48, 0x59, 0x73, // "pHYs"
-        0x00, 0x00, 0x2E, 0x23, // X: 11811 px/m (300 DPI)
-        0x00, 0x00, 0x2E, 0x23, // Y: 11811 px/m (300 DPI)
-        0x01,                   // Unit: Meter
-        0x00, 0x00, 0x00, 0x00  // Placeholder CRC32
+        0x00, 0x00, 0x00, 0x09,
+        0x70, 0x48, 0x59, 0x73,
+        0x00, 0x00, 0x2E, 0x23,
+        0x00, 0x00, 0x2E, 0x23,
+        0x01,
+        0x00, 0x00, 0x00, 0x00
       ]);
       const crc = crc32(physChunk.subarray(4, 17));
       physChunk[17] = (crc >>> 24) & 0xFF;
@@ -922,42 +921,63 @@
   }
 
   // =========================================================================
-  // MESIN 1: AI NEURAL ESRGAN DI BROWSER (100% GRATIS VIA TENSORFLOW.JS)
+  // MESIN 1: AI NEURAL ESRGAN DI BROWSER (DENGAN URL MODEL CDN EKSPLISIT)
   // =========================================================================
   async function initEsrganModel() {
     if (state.upscalerInstance) return state.upscalerInstance;
     if (typeof window.Upscaler === 'undefined') {
       throw new Error('Library AI Neural belum selesai dimuat. Pastikan koneksi internet aktif.');
     }
-    const model = window.DefaultUpscalerJSModel || undefined;
-    state.upscalerInstance = new window.Upscaler({ model });
+
+    // Menunjuk langsung ke model ESRGAN di jsDelivr CDN agar tidak terjadi error 404
+    state.upscalerInstance = new window.Upscaler({
+      model: {
+        path: 'https://cdn.jsdelivr.net/npm/@upscalerjs/default-model@1.0.0-beta.14/models/model.json',
+        scale: 2,
+      }
+    });
     return state.upscalerInstance;
   }
 
   async function processEsrganBrowserUpscale(item) {
-    const upscaler = await initEsrganModel();
-    const img = new Image();
-    img.src = item.origUrl;
-    await new Promise((res) => (img.onload = res));
+    const totalPixels = item.origW * item.origH;
+    const { tW, tH } = getSafeTargetDimensions(item.origW, item.origH, state.scale);
 
-    // Tahap 1: Jalankan Deep Learning ESRGAN (2x Neural Reconstruction dengan Tiling anti-lag)
-    $('loaderTitle').textContent = 'AI Neural ESRGAN Membangun Detail...';
-    const aiDataUrl = await upscaler.upscale(img, {
-      output: 'base64',
-      patchSize: 64,
-      padding: 4,
-      progress: (percent) => {
-        const pct = Math.round(percent * 100);
-        $('progressFill').style.width = pct + '%';
-        $('loaderSub').textContent = `Rekonstruksi Jaringan Saraf: ${pct}%`;
-      }
-    });
+    // Smart Guard: Jika file input sudah sangat besar (> 2.5 Megapiksel, misal banner cetak),
+    // gunakan Turbo Edge-Sharpen agar memori GPU browser tidak penuh/hang.
+    if (totalPixels > 2500000) {
+      $('loaderTitle').textContent = 'Optimasi Resolusi Tinggi (Smart Guard)...';
+      $('loaderSub').textContent = 'File input sudah beresolusi ultra-HD, menerapkan penajaman tepi presisi...';
+      return await refineCanvasOutput(item.origUrl, tW, tH);
+    }
 
-    // Tahap 2: Sesuaikan ke skala target akhir (2x/4x/6x/8x) + Edge Sharpening & 300 DPI
-    $('loaderTitle').textContent = 'Finalisasi Resolusi & Metadata 300 DPI...';
-    const targetW = item.origW * state.scale;
-    const targetH = item.origH * state.scale;
-    return await refineCanvasOutput(aiDataUrl, targetW, targetH);
+    try {
+      const upscaler = await initEsrganModel();
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.src = item.origUrl;
+      await new Promise((res) => (img.onload = res));
+
+      $('loaderTitle').textContent = 'AI Neural ESRGAN Membangun Detail...';
+      const aiDataUrl = await upscaler.upscale(img, {
+        output: 'base64',
+        patchSize: 64,
+        padding: 4,
+        progress: (percent) => {
+          const pct = Math.round(percent * 100);
+          $('progressFill').style.width = pct + '%';
+          $('loaderSub').textContent = `Rekonstruksi Jaringan Saraf: ${pct}%`;
+        }
+      });
+
+      $('loaderTitle').textContent = 'Finalisasi Resolusi & Metadata 300 DPI...';
+      return await refineCanvasOutput(aiDataUrl, tW, tH);
+    } catch (e) {
+      // Fallback otomatis jika CDN model diblokir jaringan
+      console.warn('Fallback ke Edge-Sharpen:', e);
+      $('loaderTitle').textContent = 'Menerapkan Edge-Sharpen & 300 DPI...';
+      return await refineCanvasOutput(item.origUrl, tW, tH);
+    }
   }
 
   // =========================================================================
@@ -1070,12 +1090,14 @@
 
     try {
       let outputUrl;
+      const { tW, tH } = getSafeTargetDimensions(item.origW, item.origH, state.scale);
+
       if (state.engine === 'esrgan_local') {
         outputUrl = await processEsrganBrowserUpscale(item);
       } else if (state.engine === 'fast_local') {
         $('loaderTitle').textContent = 'Memproses Turbo Edge-Sharpen...';
         $('loaderSub').textContent = `Meningkatkan resolusi ${state.scale}x + 300 DPI`;
-        outputUrl = await refineCanvasOutput(item.origUrl, item.origW * state.scale, item.origH * state.scale);
+        outputUrl = await refineCanvasOutput(item.origUrl, tW, tH);
       } else {
         $('loaderTitle').textContent = 'Menjalankan Cloud GPU AI...';
         $('loaderSub').textContent = `Memproses ${item.name} di server GPU`;
