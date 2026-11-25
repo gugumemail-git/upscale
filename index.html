@@ -3,13 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UltraScale AI Studio — Pro Neural Image Upscaler (300 DPI)</title>
+  <title>UltraScale AI Studio — Swin2SR Real-World Super Resolution</title>
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#2563eb" />
-
-  <!-- TensorFlow.js & UpscalerJS (100% Gratis Client-Side AI) -->
-  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/upscaler@1.0.0-beta.19/dist/browser/umd/upscaler.min.js"></script>
 
   <style>
     :root {
@@ -95,15 +91,19 @@
     .btn:disabled { opacity: 0.5; cursor: not-allowed; }
     .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
     .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
-    .btn-ai {
-      background: linear-gradient(135deg, var(--primary), var(--accent));
+
+    .btn-ai,
+    .btn-ai:hover,
+    .btn-ai:focus,
+    .btn-ai:active {
+      background: linear-gradient(135deg, var(--primary), var(--accent)) !important;
       color: #ffffff !important;
       border: none;
-      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
       width: 100%;
       min-height: 44px;
     }
-    .btn-ai:hover:not(:disabled) { filter: brightness(1.08); }
+    .btn-ai:hover:not(:disabled) { filter: brightness(1.1); transform: translateY(-1px); }
     .btn-success { background: var(--success); color: #fff; border-color: var(--success); }
 
     .workspace {
@@ -387,7 +387,7 @@
     .loader-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(15, 23, 42, 0.82);
+      background: rgba(15, 23, 42, 0.85);
       backdrop-filter: blur(6px);
       display: none;
       flex-direction: column;
@@ -408,7 +408,7 @@
       margin-bottom: 1rem;
     }
     .progress-track {
-      width: 260px;
+      width: 280px;
       height: 8px;
       background: rgba(255,255,255,0.2);
       border-radius: 999px;
@@ -452,7 +452,7 @@
 <header>
   <div class="brand">
     <span>UltraScale AI</span>
-    <span class="brand-badge">Neural ESRGAN + 300 DPI</span>
+    <span class="brand-badge">Swin2SR BSRGAN + 300 DPI</span>
   </div>
   <div class="header-actions">
     <button class="btn" id="btnOpenSettings" title="Pengaturan Cloud API Opsional">🔑 API Cloud</button>
@@ -466,18 +466,18 @@
     <div class="control-group">
       <div class="control-label">1. Pilih Mesin Pemroses AI</div>
       <div class="engine-list">
-        <div class="engine-card active" data-engine="esrgan_local">
+        <div class="engine-card active" data-engine="swin2sr_ai">
           <div>
-            <div class="engine-title">🤖 AI Neural ESRGAN (Browser)</div>
-            <div class="engine-desc">Deep Learning rekonstruksi detail nyata via GPU perangkat.</div>
+            <div class="engine-title">🤖 AI Swin2SR Real-World 4x</div>
+            <div class="engine-desc">Deep Learning rekonstruksi wajah, rambut & tekstur buram di browser.</div>
           </div>
           <span class="tag-free">100% GRATIS</span>
         </div>
 
         <div class="engine-card" data-engine="fast_local">
           <div>
-            <div class="engine-title">⚡ Turbo Edge-Sharpen</div>
-            <div class="engine-desc">Pemrosesan instan 0 detik untuk file berukuran raksasa/banner.</div>
+            <div class="engine-title">⚡ Turbo Deconvolution Sharpen</div>
+            <div class="engine-desc">Pemrosesan instan untuk file banner/spanduk berukuran raksasa.</div>
           </div>
           <span class="tag-free">INSTAN</span>
         </div>
@@ -512,18 +512,10 @@
 
     <div class="control-group">
       <div class="control-label">
-        <span>3. Penyempurnaan Ketajaman Tepi</span>
-        <span id="sharpVal">45%</span>
+        <span>3. Kekuatan Penajaman Mikro</span>
+        <span id="sharpVal">65%</span>
       </div>
-      <input type="range" id="sharpRange" min="0" max="100" value="45" />
-    </div>
-
-    <div class="control-group">
-      <div class="control-label">
-        <span>4. Reduksi Noise & Kompresi JPG</span>
-        <span id="denoiseVal">35%</span>
-      </div>
-      <input type="range" id="denoiseRange" min="0" max="100" value="35" />
+      <input type="range" id="sharpRange" min="0" max="100" value="65" />
     </div>
 
     <div class="toggle-row">
@@ -532,12 +524,12 @@
     </div>
 
     <div class="toggle-row">
-      <span>Auto HDR Tone & Kontras Cetak</span>
-      <input type="checkbox" id="chkHdr" />
+      <span>Auto HDR Tone & Kontras Wajah</span>
+      <input type="checkbox" id="chkHdr" checked />
     </div>
 
     <div class="control-group">
-      <div class="control-label">5. Format Ekspor Hasil</div>
+      <div class="control-label">4. Format Ekspor Hasil</div>
       <select id="exportFormat">
         <option value="image/png">PNG Lossless 300 DPI (Terbaik untuk Cetak)</option>
         <option value="image/jpeg">JPG Ultra 96% 300 DPI (Ukuran Ringkas)</option>
@@ -576,7 +568,7 @@
     <div class="viewer-container" id="viewerArea">
       <div class="dropzone" id="dropzone">
         <h2>Seret & Lepas Gambar ke Sini</h2>
-        <p>Menggunakan teknologi <b>AI Neural ESRGAN</b> yang berjalan langsung di browser Anda secara gratis tanpa batas kuota, dilengkapi injeksi metadata <b>300 DPI siap cetak</b>.</p>
+        <p>Menggunakan model <b>AI Swin2SR Real-World BSRGAN</b> yang berjalan langsung di browser Anda untuk merekonstruksi detail foto buram menjadi tajam dan jernih.</p>
         <span class="btn btn-primary">Jelajahi File Perangkat</span>
       </div>
 
@@ -594,8 +586,8 @@
 
       <div class="loader-overlay" id="loaderOverlay">
         <div class="spinner"></div>
-        <h3 id="loaderTitle">Memuat Jaringan Saraf AI ESRGAN...</h3>
-        <p id="loaderSub" style="font-size:0.85rem; opacity:0.85; margin-top:0.35rem;">Mohon tunggu sebentar</p>
+        <h3 id="loaderTitle">Memuat Model AI Swin2SR...</h3>
+        <p id="loaderSub" style="font-size:0.85rem; opacity:0.9; margin-top:0.35rem; max-width:340px;">Mohon tunggu sebentar</p>
         <div class="progress-track" id="progressTrack">
           <div class="progress-fill" id="progressFill"></div>
         </div>
@@ -615,7 +607,7 @@
       <button class="btn" id="btnCloseModal" style="padding:0.25rem 0.6rem;">✕</button>
     </div>
     <p style="font-size:0.83rem; color:var(--text-muted); line-height:1.45;">
-      Mesin <b>AI Neural ESRGAN</b> sudah aktif 100% gratis tanpa API Key. Kolom di bawah ini hanya diperlukan jika Anda ingin menggunakan mode <b>Cloud GPU Generative</b> dengan kunci Replicate milik sendiri.
+      Mesin <b>AI Swin2SR Real-World 4x</b> sudah aktif 100% gratis tanpa API Key. Kolom di bawah ini hanya diperlukan jika Anda ingin menggunakan mode <b>Cloud GPU Generative</b> dengan kunci Replicate milik sendiri.
     </p>
     <div class="control-group">
       <label class="control-label">Replicate API Token</label>
@@ -628,18 +620,23 @@
   </div>
 </div>
 
-<script>
+<script type="module">
+  import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.2';
+
+  // Konfigurasi agar model diunduh dari Hugging Face CDN dan di-cache di browser
+  env.allowLocalModels = false;
+  env.useBrowserCache = true;
+
   const state = {
-    engine: 'esrgan_local',
+    engine: 'swin2sr_ai',
     scale: 4,
-    sharpness: 45,
-    denoise: 35,
+    sharpness: 65,
     inject300Dpi: true,
-    hdr: false,
+    hdr: true,
     items: [],
     activeIndex: -1,
     isZoomed: false,
-    upscalerInstance: null
+    aiPipeline: null
   };
 
   const $ = (id) => document.getElementById(id);
@@ -700,10 +697,6 @@
     state.sharpness = parseInt(e.target.value, 10);
     $('sharpVal').textContent = state.sharpness + '%';
   });
-  $('denoiseRange').addEventListener('input', (e) => {
-    state.denoise = parseInt(e.target.value, 10);
-    $('denoiseVal').textContent = state.denoise + '%';
-  });
   $('chk300Dpi').addEventListener('change', (e) => state.inject300Dpi = e.target.checked);
   $('chkHdr').addEventListener('change', (e) => state.hdr = e.target.checked);
 
@@ -723,7 +716,6 @@
     return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
   }
 
-  // Menghitung dimensi aman agar tidak melewati batas maksimum HTML5 Canvas (12.000 px)
   function getSafeTargetDimensions(origW, origH, scale) {
     let tW = origW * scale;
     let tH = origH * scale;
@@ -771,14 +763,18 @@
     }
     strip.style.display = 'flex';
     strip.innerHTML = state.items.map((item, idx) => `
-      <div class="batch-item ${idx === state.activeIndex ? 'active' : ''}" onclick="selectItem(${idx})">
+      <div class="batch-item ${idx === state.activeIndex ? 'active' : ''}" data-idx="${idx}">
         <img src="${item.outUrl || item.origUrl}" />
         <span class="batch-status">${item.status}</span>
       </div>
     `).join('');
+
+    strip.querySelectorAll('.batch-item').forEach(el => {
+      el.addEventListener('click', () => selectItem(parseInt(el.dataset.idx, 10)));
+    });
   }
 
-  window.selectItem = function(idx) {
+  function selectItem(idx) {
     state.activeIndex = idx;
     const item = state.items[idx];
     if (!item) return;
@@ -787,14 +783,14 @@
     compareWrapper.style.display = 'block';
     imgBefore.src = item.origUrl;
     imgAfter.src = item.outUrl || item.origUrl;
-    $('badgeAfterLabel').textContent = item.outUrl ? `SESUDAH (${state.scale}x)` : 'PRATINJAU ASLI';
+    $('badgeAfterLabel').textContent = item.outUrl ? `SESUDAH AI (${state.scale}x)` : 'PRATINJAU ASLI';
     $('btnDownload').disabled = !item.outUrl;
     $('btnZoomToggle').disabled = false;
 
     setTimeout(syncComparisonDimensions, 50);
     updateResolutionCalc();
     renderBatchStrip();
-  };
+  }
 
   function updateResolutionCalc() {
     const item = state.items[state.activeIndex];
@@ -813,7 +809,7 @@
     $('infoPrintBanner').textContent = `${banW} × ${banH} cm`;
   }
 
-  // Split Slider Interaction
+  // Split Slider
   function syncComparisonDimensions() {
     if (imgAfter.clientWidth > 0) {
       imgBefore.style.width = imgAfter.clientWidth + 'px';
@@ -858,7 +854,7 @@
   });
 
   // =========================================================================
-  // INJEKSI METADATA 300 DPI ASLI (PNG pHYs CHUNK & JPEG JFIF APP0)
+  // INJEKSI METADATA 300 DPI ASLI
   // =========================================================================
   function inject300DpiToDataUrl(dataUrl, mimeType) {
     if (!state.inject300Dpi) return dataUrl;
@@ -921,67 +917,64 @@
   }
 
   // =========================================================================
-  // MESIN 1: AI NEURAL ESRGAN DI BROWSER (DENGAN URL MODEL CDN EKSPLISIT)
+  // MESIN 1: AI SWIN2SR REAL-WORLD BSRGAN (REKONSTRUKSI DETAIL NYATA)
   // =========================================================================
-  async function initEsrganModel() {
-    if (state.upscalerInstance) return state.upscalerInstance;
-    if (typeof window.Upscaler === 'undefined') {
-      throw new Error('Library AI Neural belum selesai dimuat. Pastikan koneksi internet aktif.');
-    }
+  async function getSwin2SrPipeline() {
+    if (state.aiPipeline) return state.aiPipeline;
 
-    // Menunjuk langsung ke model ESRGAN di jsDelivr CDN agar tidak terjadi error 404
-    state.upscalerInstance = new window.Upscaler({
-      model: {
-        path: 'https://cdn.jsdelivr.net/npm/@upscalerjs/default-model@1.0.0-beta.14/models/model.json',
-        scale: 2,
+    $('loaderTitle').textContent = 'Mengunduh Model AI Swin2SR BSRGAN...';
+    $('loaderSub').textContent = 'Hanya dilakukan sekali (tersimpan otomatis di browser)';
+
+    // Model BSRGAN 4x khusus memperbaiki gambar buram & kompresi JPG
+    state.aiPipeline = await pipeline(
+      'image-to-image',
+      'Xenova/swin2SR-realworld-sr-x4-64-bsrgan-psnr',
+      {
+        progress_callback: (info) => {
+          if (info.status === 'progress' && info.progress) {
+            const pct = Math.round(info.progress);
+            $('progressFill').style.width = pct + '%';
+            $('loaderSub').textContent = `Mengunduh Bobot AI: ${pct}% (${info.file})`;
+          }
+        }
       }
-    });
-    return state.upscalerInstance;
+    );
+    return state.aiPipeline;
   }
 
-  async function processEsrganBrowserUpscale(item) {
+  async function processSwin2SrUpscale(item) {
     const totalPixels = item.origW * item.origH;
     const { tW, tH } = getSafeTargetDimensions(item.origW, item.origH, state.scale);
 
-    // Smart Guard: Jika file input sudah sangat besar (> 2.5 Megapiksel, misal banner cetak),
-    // gunakan Turbo Edge-Sharpen agar memori GPU browser tidak penuh/hang.
-    if (totalPixels > 2500000) {
-      $('loaderTitle').textContent = 'Optimasi Resolusi Tinggi (Smart Guard)...';
-      $('loaderSub').textContent = 'File input sudah beresolusi ultra-HD, menerapkan penajaman tepi presisi...';
+    // Jika file input sudah raksasa (> 1.5 MP), arahkan ke Turbo Sharpen agar browser tidak kehabisan RAM
+    if (totalPixels > 1500000) {
+      $('loaderTitle').textContent = 'File Sudah HD — Menerapkan Turbo Sharpen...';
+      $('loaderSub').textContent = 'Mengoptimalkan tepi & resolusi cetak 300 DPI';
       return await refineCanvasOutput(item.origUrl, tW, tH);
     }
 
-    try {
-      const upscaler = await initEsrganModel();
-      const img = new Image();
-      img.crossOrigin = 'anonymous';
-      img.src = item.origUrl;
-      await new Promise((res) => (img.onload = res));
+    const upscaler = await getSwin2SrPipeline();
 
-      $('loaderTitle').textContent = 'AI Neural ESRGAN Membangun Detail...';
-      const aiDataUrl = await upscaler.upscale(img, {
-        output: 'base64',
-        patchSize: 64,
-        padding: 4,
-        progress: (percent) => {
-          const pct = Math.round(percent * 100);
-          $('progressFill').style.width = pct + '%';
-          $('loaderSub').textContent = `Rekonstruksi Jaringan Saraf: ${pct}%`;
-        }
-      });
+    $('loaderTitle').textContent = 'AI Swin2SR Membangun Ulang Detail Wajah...';
+    $('loaderSub').textContent = 'Jaringan saraf sedang merekonstruksi tekstur & ketajaman (10–25 detik)...';
+    $('progressFill').style.width = '85%';
 
-      $('loaderTitle').textContent = 'Finalisasi Resolusi & Metadata 300 DPI...';
-      return await refineCanvasOutput(aiDataUrl, tW, tH);
-    } catch (e) {
-      // Fallback otomatis jika CDN model diblokir jaringan
-      console.warn('Fallback ke Edge-Sharpen:', e);
-      $('loaderTitle').textContent = 'Menerapkan Edge-Sharpen & 300 DPI...';
-      return await refineCanvasOutput(item.origUrl, tW, tH);
-    }
+    // Beri jeda 50ms agar UI loading muncul sebelum komputasi berat dimulai
+    await new Promise(r => setTimeout(r, 50));
+
+    // Jalankan inferensi Super-Resolution 4x
+    const rawOutput = await upscaler(item.origUrl);
+    const aiCanvas = rawOutput.toCanvas();
+    const aiDataUrl = aiCanvas.toDataURL('image/png');
+
+    $('loaderTitle').textContent = 'Penyempurnaan Ketajaman Mikro & 300 DPI...';
+    $('progressFill').style.width = '100%';
+
+    return await refineCanvasOutput(aiDataUrl, tW, tH);
   }
 
   // =========================================================================
-  // MESIN 2: TURBO EDGE-SHARPEN & REFINEMENT ENGINE
+  // POST-PROCESSING: UNSHARP MASKING & AUTO-CONTRAST PRESISI
   // =========================================================================
   async function refineCanvasOutput(sourceUrl, targetW, targetH) {
     return new Promise((resolve) => {
@@ -1010,13 +1003,25 @@
           curH = nextH;
         }
 
+        if (curW > targetW) {
+          const downCanvas = document.createElement('canvas');
+          downCanvas.width = targetW;
+          downCanvas.height = targetH;
+          const downCtx = downCanvas.getContext('2d');
+          downCtx.imageSmoothingEnabled = true;
+          downCtx.imageSmoothingQuality = 'high';
+          downCtx.drawImage(curCanvas, 0, 0, targetW, targetH);
+          curCanvas = downCanvas;
+        }
+
         const finalCtx = curCanvas.getContext('2d');
         const imgData = finalCtx.getImageData(0, 0, targetW, targetH);
         const data = imgData.data;
         const copy = new Uint8ClampedArray(data);
 
-        const sharpAmount = (state.sharpness / 100) * 0.6;
-        const hdrBoost = state.hdr ? 1.08 : 1.0;
+        // Unsharp Masking aktif pada seluruh detail mikro tanpa terblokir threshold berlebihan
+        const sharpAmount = (state.sharpness / 100) * 0.85;
+        const hdrBoost = state.hdr ? 1.07 : 1.0;
 
         for (let y = 1; y < targetH - 1; y++) {
           for (let x = 1; x < targetW - 1; x++) {
@@ -1030,12 +1035,8 @@
 
               const blur = (top + bottom + left + right) * 0.25;
               const edgeDiff = center - blur;
-              const noiseGate = (state.denoise / 100) * 14;
 
-              let val = Math.abs(edgeDiff) > noiseGate
-                ? center + edgeDiff * sharpAmount
-                : center * 0.72 + blur * 0.28;
-
+              let val = center + edgeDiff * sharpAmount;
               if (state.hdr) {
                 val = ((val / 255 - 0.5) * hdrBoost + 0.5) * 255;
               }
@@ -1085,17 +1086,17 @@
     if (!item) return;
 
     $('loaderOverlay').style.display = 'flex';
-    $('progressFill').style.width = '10%';
-    $('progressTrack').style.display = state.engine === 'esrgan_local' ? 'block' : 'none';
+    $('progressFill').style.width = '5%';
+    $('progressTrack').style.display = state.engine === 'swin2sr_ai' ? 'block' : 'none';
 
     try {
       let outputUrl;
       const { tW, tH } = getSafeTargetDimensions(item.origW, item.origH, state.scale);
 
-      if (state.engine === 'esrgan_local') {
-        outputUrl = await processEsrganBrowserUpscale(item);
+      if (state.engine === 'swin2sr_ai') {
+        outputUrl = await processSwin2SrUpscale(item);
       } else if (state.engine === 'fast_local') {
-        $('loaderTitle').textContent = 'Memproses Turbo Edge-Sharpen...';
+        $('loaderTitle').textContent = 'Memproses Turbo Deconvolution Sharpen...';
         $('loaderSub').textContent = `Meningkatkan resolusi ${state.scale}x + 300 DPI`;
         outputUrl = await refineCanvasOutput(item.origUrl, tW, tH);
       } else {
@@ -1108,7 +1109,7 @@
       item.status = `${state.scale}x ✓`;
       selectItem(idx);
     } catch (err) {
-      alert('Perhatian: ' + err.message);
+      alert('Kendala Pemrosesan AI: ' + err.message);
       item.status = 'Gagal';
       renderBatchStrip();
     } finally {
