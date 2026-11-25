@@ -1,4 +1,4 @@
-const CACHE_NAME = 'ultrascale-v6';
+const CACHE_NAME = 'ultrascale-v7';
 const ASSETS = [
   '/',
   '/index.html',

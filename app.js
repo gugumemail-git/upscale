@@ -6,12 +6,14 @@ env.backends.onnx.wasm.proxy = false;
 env.backends.onnx.wasm.numThreads = 1;
 
 const state = {
-  engine: 'swin2sr_photo',
+  engine: 'swin2sr_gan',
   scale: 4,
-  sharpness: 45,
-  grain: 40,
+  sharpness: 68,
+  grain: 35,
+  denoise: 30,
   inject300Dpi: true,
   colorLock: true,
+  autoTone: true,
   items: [],
   activeIndex: -1,
   isZoomed: false,
@@ -60,10 +62,10 @@ $('btnClearKey').addEventListener('click', () => {
 // PRESET CERDAS 1-KLIK
 // =========================================================================
 const presets = {
-  portrait: { engine: 'swin2sr_photo', sharpness: 45, grain: 40, colorLock: true },
-  banner:   { engine: 'vector_edge',   sharpness: 88, grain: 0,  colorLock: true },
-  product:  { engine: 'swin2sr_photo', sharpness: 65, grain: 15, colorLock: true },
-  logo:     { engine: 'vector_edge',   sharpness: 95, grain: 0,  colorLock: false }
+  portrait: { engine: 'swin2sr_gan', sharpness: 68, grain: 35, denoise: 30, colorLock: true,  autoTone: true },
+  banner:   { engine: 'vector_edge', sharpness: 88, grain: 0,  denoise: 25, colorLock: true,  autoTone: true },
+  product:  { engine: 'swin2sr_gan', sharpness: 78, grain: 15, denoise: 20, colorLock: true,  autoTone: true },
+  logo:     { engine: 'vector_edge', sharpness: 95, grain: 0,  denoise: 35, colorLock: false, autoTone: false }
 };
 
 document.querySelectorAll('.preset-btn').forEach(btn => {
@@ -74,6 +76,7 @@ document.querySelectorAll('.preset-btn').forEach(btn => {
     if (!p) return;
 
     setEngine(p.engine);
+
     state.sharpness = p.sharpness;
     $('sharpRange').value = p.sharpness;
     $('sharpVal').textContent = p.sharpness + '%';
@@ -82,8 +85,15 @@ document.querySelectorAll('.preset-btn').forEach(btn => {
     $('grainRange').value = p.grain;
     $('grainVal').textContent = p.grain + '%';
 
+    state.denoise = p.denoise;
+    $('denoiseRange').value = p.denoise;
+    $('denoiseVal').textContent = p.denoise + '%';
+
     state.colorLock = p.colorLock;
     $('chkColorLock').checked = p.colorLock;
+
+    state.autoTone = p.autoTone;
+    $('chkAutoTone').checked = p.autoTone;
   });
 });
 
@@ -121,8 +131,14 @@ $('grainRange').addEventListener('input', (e) => {
   $('grainVal').textContent = state.grain + '%';
 });
 
+$('denoiseRange').addEventListener('input', (e) => {
+  state.denoise = parseInt(e.target.value, 10);
+  $('denoiseVal').textContent = state.denoise + '%';
+});
+
 $('chk300Dpi').addEventListener('change', (e) => state.inject300Dpi = e.target.checked);
 $('chkColorLock').addEventListener('change', (e) => state.colorLock = e.target.checked);
+$('chkAutoTone').addEventListener('change', (e) => state.autoTone = e.target.checked);
 
 // =========================================================================
 // UNGGAH & DRAG-DROP GAMBAR
@@ -370,7 +386,7 @@ function crc32(buf) {
 }
 
 // =========================================================================
-// HELPER: MULTI-STEP PROGRESSIVE RESIZE
+// HELPER: MULTI-STEP PROGRESSIVE RESIZE & PRE-DENOISE
 // =========================================================================
 function loadImageAsync(url) {
   return new Promise((resolve, reject) => {
@@ -379,6 +395,51 @@ function loadImageAsync(url) {
     img.onerror = reject;
     img.src = url;
   });
+}
+
+// Edge-Preserving Pre-Denoise (Membersihkan bintik kompresi JPG/WhatsApp sebelum AI bekerja)
+async function cleanCompressionArtifacts(sourceUrl, strengthPct) {
+  if (strengthPct <= 0) return sourceUrl;
+  const img = await loadImageAsync(sourceUrl);
+  const w = img.width, h = img.height;
+  const canvas = document.createElement('canvas');
+  canvas.width = w;
+  canvas.height = h;
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(img, 0, 0);
+
+  const imgData = ctx.getImageData(0, 0, w, h);
+  const data = imgData.data;
+  const copy = new Uint8ClampedArray(data);
+  const threshold = (strengthPct / 100) * 26;
+  const blend = (strengthPct / 100) * 0.55;
+
+  for (let y = 1; y < h - 1; y++) {
+    for (let x = 1; x < w - 1; x++) {
+      const idx = (y * w + x) * 4;
+      for (let c = 0; c < 3; c++) {
+        const center = copy[idx + c];
+        let sum = 0, weightSum = 0;
+        for (let dy = -1; dy <= 1; dy++) {
+          for (let dx = -1; dx <= 1; dx++) {
+            const val = copy[((y + dy) * w + (x + dx)) * 4 + c];
+            const diff = Math.abs(val - center);
+            if (diff < threshold) {
+              const wt = 1.0 - (diff / threshold);
+              sum += val * wt;
+              weightSum += wt;
+            }
+          }
+        }
+        if (weightSum > 0) {
+          const smoothVal = sum / weightSum;
+          data[idx + c] = center * (1 - blend) + smoothVal * blend;
+        }
+      }
+    }
+  }
+  ctx.putImageData(imgData, 0, 0);
+  return canvas.toDataURL('image/png');
 }
 
 function progressiveResizeToCanvas(img, targetW, targetH) {
@@ -420,19 +481,19 @@ function progressiveResizeToCanvas(img, targetW, targetH) {
 }
 
 // =========================================================================
-// MESIN 1: AI SWIN2SR PHOTOREAL + ORIGINAL COLOR LOCK + MICRO-PORE SYNTHESIS
+// MESIN 1: AI SWIN2SR-GAN PERCEPTUAL + DUAL-BAND FREQUENCY SEPARATION
 // =========================================================================
-async function getSwin2SrPipeline() {
+async function getSwin2SrGanPipeline() {
   if (state.aiPipeline) return state.aiPipeline;
 
-  $('loaderTitle').textContent = 'Menyiapkan Jaringan Saraf AI Swin2SR...';
-  $('loaderSub').textContent = 'Mengunduh model sekali (tersimpan otomatis di cache browser)';
+  $('loaderTitle').textContent = 'Menyiapkan Model AI Swin2SR-GAN Perceptual...';
+  $('loaderSub').textContent = 'Mengunduh model generasi detail tinggi (tersimpan di cache browser)';
 
   const progressCb = (info) => {
     if (info.status === 'progress' && info.progress) {
       const pct = Math.round(info.progress);
       $('progressFill').style.width = pct + '%';
-      $('loaderSub').textContent = `Mengunduh Bobot AI: ${pct}%`;
+      $('loaderSub').textContent = `Mengunduh Bobot AI-GAN: ${pct}%`;
     }
   };
 
@@ -446,34 +507,47 @@ async function getSwin2SrPipeline() {
     }
   }
 
-  state.aiPipeline = await pipeline(
-    'image-to-image',
-    'Xenova/swin2SR-realworld-sr-x4-64-bsrgan-psnr',
-    { device: useDevice, progress_callback: progressCb }
-  );
+  // Menggunakan model Perceptual GAN (bukan -psnr) agar helai rambut, janggut, bulu mata & pori kulit tajam nyata seperti img2go
+  try {
+    state.aiPipeline = await pipeline(
+      'image-to-image',
+      'Xenova/swin2SR-realworld-sr-x4-64-bsrgan',
+      { device: useDevice, progress_callback: progressCb }
+    );
+  } catch (_) {
+    state.aiPipeline = await pipeline(
+      'image-to-image',
+      'Xenova/swin2SR-realworld-sr-x4-64-bsrgan-psnr',
+      { device: useDevice, progress_callback: progressCb }
+    );
+  }
 
   return state.aiPipeline;
 }
 
-async function processPhotorealAiUpscale(item) {
+async function processPhotorealGanUpscale(item) {
   const totalPixels = item.origW * item.origH;
   const { tW, tH } = getSafeTargetDimensions(item.origW, item.origH, state.scale);
 
-  // Jika file sudah berukuran besar (> 1.8 MP), arahkan ke Vector-Edge Print De-Blur agar aman
   if (totalPixels > 1800000) {
     $('loaderTitle').textContent = 'File Resolusi Tinggi — Mengaktifkan Vector-Edge Print...';
     $('loaderSub').textContent = 'Menjaga ketajaman detail & huruf cetak 300 DPI';
     return await processVectorEdgePrint(item.origUrl, tW, tH);
   }
 
-  const upscaler = await getSwin2SrPipeline();
+  $('loaderTitle').textContent = 'Tahap 1/3: Membersihkan Artefak Kompresi...';
+  $('loaderSub').textContent = 'Menghilangkan kotak-kotak JPG sebelum rekonstruksi saraf';
+  $('progressFill').style.width = '20%';
+  const cleanUrl = await cleanCompressionArtifacts(item.origUrl, state.denoise);
 
-  $('loaderTitle').textContent = 'AI Swin2SR Merekonstruksi Struktur Wajah...';
-  $('loaderSub').textContent = 'Tahap 1/2: Deep Learning Super-Resolution berjalan...';
+  const upscaler = await getSwin2SrGanPipeline();
+
+  $('loaderTitle').textContent = 'Tahap 2/3: AI-GAN Merekonstruksi Helai Rambut & Wajah...';
+  $('loaderSub').textContent = 'Jaringan saraf perceptual sedang menghasilkan detail mikro...';
   $('progressFill').style.width = '75%';
   await new Promise(r => setTimeout(r, 40));
 
-  const rawOutput = await upscaler(item.origUrl);
+  const rawOutput = await upscaler(cleanUrl);
   const aiCanvas = rawOutput.toCanvas();
   const stdCanvas = document.createElement('canvas');
   stdCanvas.width = aiCanvas.width;
@@ -481,8 +555,8 @@ async function processPhotorealAiUpscale(item) {
   stdCanvas.getContext('2d').drawImage(aiCanvas, 0, 0);
   const aiDataUrl = stdCanvas.toDataURL('image/png');
 
-  $('loaderTitle').textContent = 'Sintesis Pori Kulit Alami & Original Color Lock...';
-  $('loaderSub').textContent = 'Tahap 2/2: Menghilangkan efek kartun & injeksi 300 DPI...';
+  $('loaderTitle').textContent = 'Tahap 3/3: Dual-Band Frequency Separation & Pori Alami...';
+  $('loaderSub').textContent = 'Menajamkan helai rambut, mata & menyuntikkan metadata 300 DPI...';
   $('progressFill').style.width = '100%';
   await new Promise(r => setTimeout(r, 30));
 
@@ -500,54 +574,73 @@ async function processPhotorealAiUpscale(item) {
   const data = imgData.data;
   const copy = new Uint8ClampedArray(data);
 
-  // Parameter fotografi alami (ANTI-KARTUN: tidak ada sigmoid shock filter di mode foto!)
-  const clarityGain = (state.sharpness / 100) * 0.65;
-  const poreStrength = (state.grain / 100) * 9.5;
+  // Hitung peta Luminance terpisah agar bisa melakukan Dual-Band Frequency Separation (Band 1: Pori/Bulu Mata 1px, Band 2: Helai Rambut/Janggut 3px)
+  const lumMap = new Float32Array(tW * tH);
+  for (let i = 0, p = 0; i < copy.length; i += 4, p++) {
+    lumMap[p] = 0.299 * copy[i] + 0.587 * copy[i + 1] + 0.114 * copy[i + 2];
+  }
 
-  // Generator noise Gaussian/organik multi-frekuensi untuk mensimulasikan pori kulit & sensor kamera
+  const sharpNorm = state.sharpness / 100;
+  const fineGain = sharpNorm * 0.65;     // Radius 1px: bulu mata, kilau iris mata, pori mikro
+  const strandGain = sharpNorm * 0.55;   // Radius 3px: helai rambut individu, janggut, lipatan kain
+  const poreStrength = (state.grain / 100) * 8.5;
+
   let s1 = 1337, s2 = 7331;
   function organicMicroTexture(x, y) {
     s1 = (s1 * 16807) % 2147483647;
     s2 = (s2 * 48271) % 2147483647;
-    const fine = ((s1 / 2147483647) + (s2 / 2147483647) - 1.0); // Distribusi triangular (lebih alami dari uniform)
-    // Gelombang mikro halus mirip pori kulit 2-3 piksel
+    const fine = ((s1 / 2147483647) + (s2 / 2147483647) - 1.0);
     const porePattern = Math.sin(x * 1.15 + Math.cos(y * 0.95)) * 0.35;
     return (fine * 0.75 + porePattern * 0.25);
   }
 
-  for (let y = 1; y < tH - 1; y++) {
-    for (let x = 1; x < tW - 1; x++) {
-      const idx = (y * tW + x) * 4;
+  for (let y = 3; y < tH - 3; y++) {
+    for (let x = 3; x < tW - 3; x++) {
+      const p = y * tW + x;
+      const idx = p * 4;
+      const lumC = lumMap[p];
 
-      // 1. High-Pass Luminance Clarity (Hanya menajamkan kecerahan, BUKAN warna, agar tepi tidak seperti garis kartun)
-      const lumC = 0.299 * copy[idx] + 0.587 * copy[idx + 1] + 0.114 * copy[idx + 2];
-      const lumN = 0.299 * copy[((y - 1) * tW + x) * 4] + 0.587 * copy[((y - 1) * tW + x) * 4 + 1] + 0.114 * copy[((y - 1) * tW + x) * 4 + 2];
-      const lumS = 0.299 * copy[((y + 1) * tW + x) * 4] + 0.587 * copy[((y + 1) * tW + x) * 4 + 1] + 0.114 * copy[((y + 1) * tW + x) * 4 + 2];
-      const lumW = 0.299 * copy[(y * tW + (x - 1)) * 4] + 0.587 * copy[(y * tW + (x - 1)) * 4 + 1] + 0.114 * copy[(y * tW + (x - 1)) * 4 + 2];
-      const lumE = 0.299 * copy[(y * tW + (x + 1)) * 4] + 0.587 * copy[(y * tW + (x + 1)) * 4 + 1] + 0.114 * copy[(y * tW + (x + 1)) * 4 + 2];
+      // Band 1: Fine Detail (Radius 1px)
+      const avg1 = (
+        lumMap[p - tW] + lumMap[p + tW] + lumMap[p - 1] + lumMap[p + 1]
+      ) * 0.25;
+      const band1 = (lumC - avg1) * fineGain;
 
-      const lumAvg = (lumN + lumS + lumW + lumE) * 0.25;
-      const highPass = (lumC - lumAvg) * clarityGain;
+      // Band 2: Hair & Beard Strands (Radius 3px)
+      const avg3 = (
+        lumMap[p - 3 * tW] + lumMap[p + 3 * tW] + lumMap[p - 3] + lumMap[p + 3] +
+        lumMap[p - 2 * tW - 2] + lumMap[p - 2 * tW + 2] + lumMap[p + 2 * tW - 2] + lumMap[p + 2 * tW + 2]
+      ) * 0.125;
+      let band2 = (lumC - avg3) * strandGain;
+      // Halo suppression: batasi agar tepi kontras tinggi tidak memunculkan garis putih berlebih
+      band2 = Math.max(-24, Math.min(24, band2));
 
-      // 2. Hitung deteksi area kulit / midtone untuk menyuntikkan tekstur pori alami
+      const totalDetail = band1 + band2;
+
       const rAi = copy[idx], gAi = copy[idx + 1], bAi = copy[idx + 2];
       const isSkinOrMidtone = (lumC > 45 && lumC < 225) ? 1.0 : 0.35;
       const microTex = poreStrength > 0 ? organicMicroTexture(x, y) * poreStrength * isSkinOrMidtone : 0;
 
-      // 3. Original Color Lock: Ambil krominansi (warna asli) dari gambar original agar wajah tidak pucat/oranye
-      let rOut = rAi + highPass + microTex;
-      let gOut = gAi + highPass + microTex * 0.92;
-      let bOut = bAi + highPass + microTex * 0.85;
+      let rOut = rAi + totalDetail + microTex;
+      let gOut = gAi + totalDetail + microTex * 0.92;
+      let bOut = bAi + totalDetail + microTex * 0.85;
 
+      // Kunci Warna Asli (Original Color Lock)
       if (state.colorLock) {
         const lumOrig = 0.299 * origData[idx] + 0.587 * origData[idx + 1] + 0.114 * origData[idx + 2];
         const lumNew = 0.299 * rOut + 0.587 * gOut + 0.114 * bOut;
         const deltaLum = lumNew - lumOrig;
 
-        // Gabungkan 80% warna asli dari foto original + 20% warna AI, lalu terapkan pencahayaan tajam dari AI
-        rOut = (origData[idx] * 0.80 + rAi * 0.20) + deltaLum;
-        gOut = (origData[idx + 1] * 0.80 + gAi * 0.20) + deltaLum;
-        bOut = (origData[idx + 2] * 0.80 + bAi * 0.20) + deltaLum;
+        rOut = (origData[idx] * 0.72 + rAi * 0.28) + deltaLum;
+        gOut = (origData[idx + 1] * 0.72 + gAi * 0.28) + deltaLum;
+        bOut = (origData[idx + 2] * 0.72 + bAi * 0.28) + deltaLum;
+      }
+
+      // Auto Kontras & Kejernihan Cetak Halus (S-Curve lembut tanpa mengubah rona kulit)
+      if (state.autoTone) {
+        rOut = applyGentlePrintCurve(rOut);
+        gOut = applyGentlePrintCurve(gOut);
+        bOut = applyGentlePrintCurve(bOut);
       }
 
       data[idx]     = Math.max(0, Math.min(255, rOut));
@@ -562,11 +655,18 @@ async function processPhotorealAiUpscale(item) {
   return inject300DpiToDataUrl(rawDataUrl, format);
 }
 
+function applyGentlePrintCurve(v) {
+  const n = Math.max(0, Math.min(1, v / 255));
+  const curved = n - 0.022 * Math.sin(2 * Math.PI * n);
+  return curved * 255;
+}
+
 // =========================================================================
-// MESIN 2: VECTOR-EDGE PRINT DE-BLUR (KHUSUS BANNER, TULISAN & LOGO)
+// MESIN 2: VECTOR-EDGE PRINT DE-BLUR + ANTI-JAGGED (KHUSUS BANNER & TULISAN)
 // =========================================================================
 async function processVectorEdgePrint(sourceUrl, targetW, targetH) {
-  const img = await loadImageAsync(sourceUrl);
+  const cleanUrl = await cleanCompressionArtifacts(sourceUrl, state.denoise);
+  const img = await loadImageAsync(cleanUrl);
   const curCanvas = progressiveResizeToCanvas(img, targetW, targetH);
 
   const finalCtx = curCanvas.getContext('2d');
@@ -574,11 +674,10 @@ async function processVectorEdgePrint(sourceUrl, targetW, targetH) {
   const data = imgData.data;
   const copy = new Uint8ClampedArray(data);
 
-  // Radius pemindaian tepi menyesuaikan skala pembesaran agar menangkap seluruh area buram huruf
   const radius = Math.max(2, Math.min(6, state.scale));
   const sharpNorm = state.sharpness / 100;
-  const steepPower = 1.0 + sharpNorm * 3.4;
-  const detailBoost = sharpNorm * 0.65;
+  const steepPower = 1.0 + sharpNorm * 3.1;
+  const detailBoost = sharpNorm * 0.55;
 
   for (let y = radius; y < targetH - radius; y++) {
     for (let x = radius; x < targetW - radius; x++) {
@@ -602,7 +701,6 @@ async function processVectorEdgePrint(sourceUrl, targetW, targetH) {
 
         let val = center;
 
-        // Sigmoidal Shock Filter: Memadatkan tepi buram huruf menjadi garis vektor tegas tanpa merubah bentuk font
         if (range >= 14 && sharpNorm > 0) {
           const t = (center - minVal) / range;
           const steepT = t < 0.5
@@ -614,7 +712,32 @@ async function processVectorEdgePrint(sourceUrl, targetW, targetH) {
         const localAvg = (n + s + w + e) * 0.15 + (nw + ne + sw + se) * 0.10;
         val += (center - localAvg) * detailBoost;
 
+        if (state.autoTone) {
+          val = applyGentlePrintCurve(val);
+        }
+
         data[idx + c] = Math.max(0, Math.min(255, val));
+      }
+    }
+  }
+
+  // Sub-Pixel Diagonal Anti-Aliasing pass: Menghaluskan tangga piksel (jagged) pada lengkungan huruf O, S, C, R
+  const edgeCopy = new Uint8ClampedArray(data);
+  for (let y = 1; y < targetH - 1; y++) {
+    for (let x = 1; x < targetW - 1; x++) {
+      const idx = (y * targetW + x) * 4;
+      for (let c = 0; c < 3; c++) {
+        const cur = edgeCopy[idx + c];
+        const crossAvg = (
+          edgeCopy[((y - 1) * targetW + x) * 4 + c] +
+          edgeCopy[((y + 1) * targetW + x) * 4 + c] +
+          edgeCopy[(y * targetW + (x - 1)) * 4 + c] +
+          edgeCopy[(y * targetW + (x + 1)) * 4 + c]
+        ) * 0.25;
+        // Jika piksel merupakan titik tangga terisolasi, haluskan 22% agar lengkungan huruf mulus
+        if (Math.abs(cur - crossAvg) > 45) {
+          data[idx + c] = cur * 0.78 + crossAvg * 0.22;
+        }
       }
     }
   }
@@ -660,17 +783,17 @@ async function processSingle(idx) {
 
   $('loaderOverlay').style.display = 'flex';
   $('progressFill').style.width = '10%';
-  $('progressTrack').style.display = state.engine === 'swin2sr_photo' ? 'block' : 'none';
+  $('progressTrack').style.display = state.engine === 'swin2sr_gan' ? 'block' : 'none';
 
   try {
     let outputUrl;
     const { tW, tH } = getSafeTargetDimensions(item.origW, item.origH, state.scale);
 
-    if (state.engine === 'swin2sr_photo') {
-      outputUrl = await processPhotorealAiUpscale(item);
+    if (state.engine === 'swin2sr_gan') {
+      outputUrl = await processPhotorealGanUpscale(item);
     } else if (state.engine === 'vector_edge') {
       $('loaderTitle').textContent = 'Memproses Vector-Edge Print De-Blur...';
-      $('loaderSub').textContent = `Memadatkan ketajaman tulisan & desain (${state.scale}x) + 300 DPI`;
+      $('loaderSub').textContent = `Memadatkan ketajaman tulisan & anti-jagged (${state.scale}x) + 300 DPI`;
       await new Promise(r => setTimeout(r, 30));
       outputUrl = await processVectorEdgePrint(item.origUrl, tW, tH);
     } else {
