@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="id" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>UltraScale AI Studio — Pro Neural Image Upscaler (300 DPI)</title>
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#2563eb" />
+
+  <!-- TensorFlow.js & UpscalerJS ESRGAN (100% Gratis Client-Side AI) -->
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@upscalerjs/default-model@1.0.0-beta.14/dist/umd/index.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/upscaler@1.0.0-beta.19/dist/browser/umd/upscaler.min.js"></script>
+
+  <style>
+    :root {
+      --bg-app: #f8fafc;
+      --bg-panel: #ffffff;
+      --bg-subtle: #f1f5f9;
+      --border: #e2e8f0;
+      --text-main: #0f172a;
+      --text-muted: #475569;
+      --primary: #2563eb;
+      --primary-hover: #1d4ed8;
+      --accent: #7c3aed;
+      --success: #059669;
+      --warning: #d97706;
+      --danger: #dc2626;
+      --shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
+      --checker-1: #e2e8f0;
+      --checker-2: #ffffff;
+    }
+
+    [data-theme="dark"] {
+      --bg-app: #090d16;
+      --bg-panel: #111827;
+      --bg-subtle: #1e293b;
+      --border: #334155;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent: #8b5cf6;
+      --success: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.5);
+      --checker-1: #1e293b;
+      --checker-2: #0f172a;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; }
+    body { background: var(--bg-app); color: var(--text-main); min-height: 100vh; display: flex; flex-direction: column; transition: background 0.2s, color 0.2s; }
+
+    /* Header */
+    header {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border);
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 40;
+    }
+    .brand { display: flex; align-items: center; gap: 0.65rem; font-weight: 800; font-size: 1.15rem; letter-spacing: -0.02em; }
+    .brand-badge {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+      font-size: 0.68rem;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .header-actions { display: flex; gap: 0.5rem; align-items: center; }
+
+    /* Buttons */
+    .btn {
+      border: 1px solid var(--border);
+      background: var(--bg-panel);
+      color: var(--text-main);
+      padding: 0.5rem 0.9rem;
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.45rem;
+      transition: all 0.15s;
+    }
+    .btn:hover:not(:disabled) { background: var(--bg-subtle); }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
+    .btn-ai {
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      color: #fff;
+      border: none;
+      box-shadow: 0 4px 14px rgba(124, 58, 237, 0.3);
+    }
+    .btn-ai:hover:not(:disabled) { filter: brightness(1.08); }
+    .btn-success { background: var(--success); color: #fff; border-color: var(--success); }
+
+    /* Workspace */
+    .workspace {
+      display: grid;
+      grid-template-columns: 365px 1fr;
+      flex: 1;
+      min-height: calc(100vh - 60px);
+    }
+    @media (max-width: 960px) {
+      .workspace { grid-template-columns: 1fr; }
+    }
+
+    /* Sidebar */
+    .sidebar {
+      background: var(--bg-panel);
+      border-right: 1px solid var(--border);
+      padding: 1.2rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.05rem;
+      overflow-y: auto;
+      max-height: calc(100vh - 60px);
+    }
+    @media (max-width: 960px) {
+      .sidebar { max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
+    }
+
+    .control-group { display: flex; flex-direction: column; gap: 0.45rem; }
+    .control-label {
+      font-size: 0.76rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      color: var(--text-muted);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* Engine Cards */
+    .engine-list { display: flex; flex-direction: column; gap: 0.45rem; }
+    .engine-card {
+      border: 2px solid var(--border);
+      border-radius: 10px;
+      padding: 0.6rem 0.75rem;
+      cursor: pointer;
+      background: var(--bg-subtle);
+      transition: all 0.15s;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .engine-card.active {
+      border-color: var(--primary);
+      background: rgba(37, 99, 235, 0.08);
+    }
+    .engine-title { font-size: 0.83rem; font-weight: 700; display: flex; align-items: center; gap: 0.35rem; }
+    .engine-desc { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.15rem; line-height: 1.3; }
+    .tag-free {
+      background: rgba(5, 150, 105, 0.15);
+      color: var(--success);
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+    .tag-pro {
+      background: rgba(124, 58, 237, 0.15);
+      color: var(--accent);
+      font-size: 0.65rem;
+      font-weight: 800;
+      padding: 0.15rem 0.45rem;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    /* Pills */
+    .pill-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
+    .pill {
+      padding: 0.45rem;
+      text-align: center;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      cursor: pointer;
+      background: var(--bg-subtle);
+    }
+    .pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    select, input[type="range"], input[type="password"], input[type="text"] {
+      width: 100%;
+      padding: 0.5rem 0.65rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-subtle);
+      color: var(--text-main);
+      font-size: 0.84rem;
+    }
+    input[type="range"] { padding: 0; accent-color: var(--primary); cursor: pointer; }
+
+    .toggle-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0.45rem 0.65rem;
+      background: var(--bg-subtle);
+      border-radius: 8px;
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    /* Info Box */
+    .spec-box {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.75rem;
+      font-size: 0.78rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+    .spec-row { display: flex; justify-content: space-between; }
+    .spec-val { font-weight: 700; color: var(--text-main); }
+
+    /* Stage */
+    .stage {
+      display: flex;
+      flex-direction: column;
+      padding: 1.25rem;
+      gap: 1rem;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--bg-panel);
+      padding: 0.65rem 1rem;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+    }
+
+    .viewer-container {
+      flex: 1;
+      min-height: 440px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background-image: linear-gradient(45deg, var(--checker-1) 25%, transparent 25%),
+        linear-gradient(-45deg, var(--checker-1) 25%, transparent 25%),
+        linear-gradient(45deg, transparent 75%, var(--checker-1) 75%),
+        linear-gradient(-45deg, transparent 75%, var(--checker-1) 75%);
+      background-size: 20px 20px;
+      background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+      background-color: var(--checker-2);
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      user-select: none;
+    }
+
+    .dropzone {
+      text-align: center;
+      padding: 2.5rem;
+      max-width: 460px;
+      background: var(--bg-panel);
+      border: 2px dashed var(--primary);
+      border-radius: 16px;
+      box-shadow: var(--shadow);
+      cursor: pointer;
+    }
+    .dropzone h2 { font-size: 1.15rem; margin-bottom: 0.5rem; }
+    .dropzone p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.45; }
+
+    /* Split Comparison */
+    .compare-wrapper {
+      position: relative;
+      max-width: 100%;
+      max-height: 70vh;
+      display: none;
+      box-shadow: var(--shadow);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .compare-wrapper img {
+      display: block;
+      max-width: 100%;
+      max-height: 70vh;
+      object-fit: contain;
+      pointer-events: none;
+    }
+    .img-before-layer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      height: 100%;
+      width: 50%;
+      overflow: hidden;
+      border-right: 2px solid #fff;
+    }
+    .img-before-layer img {
+      max-width: none;
+      height: 100%;
+    }
+    .slider-handle {
+      position: absolute;
+      top: 0;
+      bottom: 0;
+      left: 50%;
+      width: 36px;
+      transform: translateX(-50%);
+      cursor: ew-resize;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .slider-knob {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      border: 2px solid #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      font-weight: 800;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.4);
+    }
+    .badge-tag {
+      position: absolute;
+      top: 12px;
+      padding: 0.25rem 0.6rem;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      font-weight: 700;
+      background: rgba(15, 23, 42, 0.78);
+      color: #fff;
+      backdrop-filter: blur(4px);
+    }
+    .tag-before { left: 12px; }
+    .tag-after { right: 12px; background: rgba(37, 99, 235, 0.9); }
+
+    /* Batch Strip */
+    .batch-strip {
+      display: flex;
+      gap: 0.6rem;
+      overflow-x: auto;
+      padding: 0.5rem;
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+    }
+    .batch-item {
+      min-width: 74px;
+      height: 74px;
+      border-radius: 8px;
+      border: 2px solid var(--border);
+      overflow: hidden;
+      position: relative;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .batch-item.active { border-color: var(--primary); }
+    .batch-item img { width: 100%; height: 100%; object-fit: cover; }
+    .batch-status {
+      position: absolute;
+      bottom: 2px;
+      right: 2px;
+      font-size: 0.65rem;
+      padding: 1px 4px;
+      border-radius: 4px;
+      background: rgba(0,0,0,0.75);
+      color: #fff;
+      font-weight: 700;
+    }
+
+    /* Loader & Progress Bar */
+    .loader-overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(15, 23, 42, 0.82);
+      backdrop-filter: blur(6px);
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      z-index: 30;
+      text-align: center;
+      padding: 1.5rem;
+    }
+    .spinner {
+      width: 44px;
+      height: 44px;
+      border: 4px solid rgba(255,255,255,0.2);
+      border-top-color: #38bdf8;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+      margin-bottom: 1rem;
+    }
+    .progress-track {
+      width: 260px;
+      height: 8px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 999px;
+      overflow: hidden;
+      margin-top: 0.85rem;
+    }
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+      transition: width 0.2s;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* Modal */
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+      padding: 1rem;
+    }
+    .modal-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      max-width: 460px;
+      width: 100%;
+      padding: 1.5rem;
+      box-shadow: var(--shadow);
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="brand">
+    <span>UltraScale AI</span>
+    <span class="brand-badge">Neural ESRGAN + 300 DPI</span>
+  </div>
+  <div class="header-actions">
+    <button class="btn" id="btnOpenSettings" title="Pengaturan Cloud API Opsional">🔑 API Cloud</button>
+    <button class="btn" id="btnToggleTheme" title="Ganti Tema Terang/Gelap">🌓 Tema</button>
+  </div>
+</header>
+
+<div class="workspace">
+  <!-- PANEL KONTROL KIRI -->
+  <aside class="sidebar">
+    <div class="control-group">
+      <div class="control-label">1. Pilih Mesin Pemroses AI</div>
+      <div class="engine-list">
+        <div class="engine-card active" data-engine="esrgan_local">
+          <div>
+            <div class="engine-title">🤖 AI Neural ESRGAN (Browser)</div>
+            <div class="engine-desc">Deep Learning rekonstruksi detail nyata via GPU perangkat.</div>
+          </div>
+          <span class="tag-free">100% GRATIS</span>
+        </div>
+
+        <div class="engine-card" data-engine="fast_local">
+          <div>
+            <div class="engine-title">⚡ Turbo Edge-Sharpen</div>
+            <div class="engine-desc">Pemrosesan instan 0 detik untuk file berukuran sangat besar.</div>
+          </div>
+          <span class="tag-free">INSTAN</span>
+        </div>
+
+        <div class="engine-card" data-engine="cloud">
+          <div>
+            <div class="engine-title">🧠 Cloud GPU Generative</div>
+            <div class="engine-desc">Server NVIDIA A100 (Memerlukan API Key Replicate).</div>
+          </div>
+          <span class="tag-pro">OPSIONAL</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="control-group" id="cloudModelGroup" style="display:none;">
+      <div class="control-label">Model AI Cloud GPU</div>
+      <select id="cloudModelSelect">
+        <option value="esrgan">Real-ESRGAN 4x+ (Foto, Produk, Desain & Wajah)</option>
+        <option value="clarity">Clarity Generative Upscaler (Ultra Detail & Tekstur)</option>
+      </select>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">2. Faktor Pembesaran (Scale)</div>
+      <div class="pill-group" id="scalePills">
+        <div class="pill" data-scale="2">2x</div>
+        <div class="pill active" data-scale="4">4x</div>
+        <div class="pill" data-scale="6">6x</div>
+        <div class="pill" data-scale="8">8x</div>
+      </div>
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">
+        <span>3. Penyempurnaan Ketajaman Tepi</span>
+        <span id="sharpVal">45%</span>
+      </div>
+      <input type="range" id="sharpRange" min="0" max="100" value="45" />
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">
+        <span>4. Reduksi Noise & Kompresi JPG</span>
+        <span id="denoiseVal">35%</span>
+      </div>
+      <input type="range" id="denoiseRange" min="0" max="100" value="35" />
+    </div>
+
+    <div class="toggle-row">
+      <span>Injeksi Metadata Cetak 300 DPI Asli</span>
+      <input type="checkbox" id="chk300Dpi" checked />
+    </div>
+
+    <div class="toggle-row">
+      <span>Auto HDR Tone & Kontras Cetak</span>
+      <input type="checkbox" id="chkHdr" />
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">5. Format Ekspor Hasil</div>
+      <select id="exportFormat">
+        <option value="image/png">PNG Lossless 300 DPI (Terbaik untuk Cetak)</option>
+        <option value="image/jpeg">JPG Ultra 96% 300 DPI (Ukuran Ringkas)</option>
+        <option value="image/webp">WebP Modern (Optimal untuk Website)</option>
+      </select>
+    </div>
+
+    <button class="btn btn-ai" id="btnProcess" disabled style="padding: 0.8rem; font-size: 0.95rem;">
+      ✨ Proses Upscale AI Sekarang
+    </button>
+
+    <!-- KALKULATOR CETAK & RESOLUSI -->
+    <div class="spec-box">
+      <div class="control-label" style="margin-bottom:0.2rem;">Kalkulator Resolusi & Cetak</div>
+      <div class="spec-row"><span>Resolusi Awal:</span><span class="spec-val" id="infoOrigRes">-</span></div>
+      <div class="spec-row"><span>Target Output:</span><span class="spec-val" id="infoTargetRes" style="color:var(--primary);">-</span></div>
+      <div class="spec-row"><span>Cetak Foto (300 DPI):</span><span class="spec-val" id="infoPrintPhoto">-</span></div>
+      <div class="spec-row"><span>Cetak Banner (150 DPI):</span><span class="spec-val" id="infoPrintBanner">-</span></div>
+    </div>
+  </aside>
+
+  <!-- AREA KANVAS UTAMA -->
+  <main class="stage">
+    <div class="toolbar">
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <button class="btn btn-primary" id="btnUploadTrigger">📁 Pilih / Tambah Gambar</button>
+        <button class="btn" id="btnProcessAll" disabled>⚡ Proses Semua Antrean</button>
+        <input type="file" id="fileInput" accept="image/*" multiple hidden />
+      </div>
+      <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
+        <button class="btn" id="btnZoomToggle" disabled>🔍 Zoom 100% Asli</button>
+        <button class="btn btn-success" id="btnDownload" disabled>⬇️ Unduh Hasil (300 DPI)</button>
+      </div>
+    </div>
+
+    <div class="viewer-container" id="viewerArea">
+      <div class="dropzone" id="dropzone">
+        <h2>Seret & Lepas Gambar ke Sini</h2>
+        <p>Menggunakan teknologi <b>AI Neural ESRGAN</b> yang berjalan langsung di browser Anda secara gratis tanpa batas kuota, dilengkapi injeksi metadata <b>300 DPI siap cetak</b>.</p>
+        <span class="btn btn-primary">Jelajahi File Perangkat</span>
+      </div>
+
+      <div class="compare-wrapper" id="compareWrapper">
+        <img id="imgAfter" alt="Hasil Upscale" />
+        <div class="img-before-layer" id="beforeLayer">
+          <img id="imgBefore" alt="Gambar Asli" />
+        </div>
+        <span class="badge-tag tag-before">SEBELUM</span>
+        <span class="badge-tag tag-after" id="badgeAfterLabel">SESUDAH (4x)</span>
+        <div class="slider-handle" id="sliderHandle">
+          <div class="slider-knob">◀▶</div>
+        </div>
+      </div>
+
+      <div class="loader-overlay" id="loaderOverlay">
+        <div class="spinner"></div>
+        <h3 id="loaderTitle">Memuat Jaringan Saraf AI ESRGAN...</h3>
+        <p id="loaderSub" style="font-size:0.85rem; opacity:0.85; margin-top:0.35rem;">Mohon tunggu sebentar</p>
+        <div class="progress-track" id="progressTrack">
+          <div class="progress-fill" id="progressFill"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ANTREAN BATCH -->
+    <div class="batch-strip" id="batchStrip" style="display:none;"></div>
+  </main>
+</div>
+
+<!-- MODAL PENGATURAN CLOUD API -->
+<div class="modal-backdrop" id="settingsModal">
+  <div class="modal-card">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <h3 style="font-size:1.05rem;">Pengaturan Cloud GPU AI (Opsional)</h3>
+      <button class="btn" id="btnCloseModal" style="padding:0.25rem 0.6rem;">✕</button>
+    </div>
+    <p style="font-size:0.83rem; color:var(--text-muted); line-height:1.45;">
+      Mesin <b>AI Neural ESRGAN</b> sudah aktif 100% gratis tanpa API Key. Kolom di bawah ini hanya diperlukan jika Anda ingin menggunakan mode <b>Cloud GPU Generative</b> dengan kunci Replicate milik sendiri.
+    </p>
+    <div class="control-group">
+      <label class="control-label">Replicate API Token</label>
+      <input type="password" id="inputApiKey" placeholder="r8_xxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:0.5rem;">
+      <button class="btn" id="btnClearKey">Hapus Kunci</button>
+      <button class="btn btn-primary" id="btnSaveKey">Simpan Pengaturan</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  // State Aplikasi
+  const state = {
+    engine: 'esrgan_local',
+    scale: 4,
+    sharpness: 45,
+    denoise: 35,
+    inject300Dpi: true,
+    hdr: false,
+    items: [],
+    activeIndex: -1,
+    isZoomed: false,
+    upscalerInstance: null
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const fileInput = $('fileInput');
+  const dropzone = $('dropzone');
+  const compareWrapper = $('compareWrapper');
+  const imgBefore = $('imgBefore');
+  const imgAfter = $('imgAfter');
+  const beforeLayer = $('beforeLayer');
+  const sliderHandle = $('sliderHandle');
+
+  // Tema Terang / Gelap
+  $('btnToggleTheme').addEventListener('click', () => {
+    const html = document.documentElement;
+    const next = html.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+    html.setAttribute('data-theme', next);
+    localStorage.setItem('uscale_theme', next);
+  });
+  if (localStorage.getItem('uscale_theme')) {
+    document.documentElement.setAttribute('data-theme', localStorage.getItem('uscale_theme'));
+  }
+
+  // Modal API Key
+  $('inputApiKey').value = localStorage.getItem('uscale_api_key') || '';
+  $('btnOpenSettings').addEventListener('click', () => $('settingsModal').style.display = 'flex');
+  $('btnCloseModal').addEventListener('click', () => $('settingsModal').style.display = 'none');
+  $('btnSaveKey').addEventListener('click', () => {
+    localStorage.setItem('uscale_api_key', $('inputApiKey').value.trim());
+    $('settingsModal').style.display = 'none';
+  });
+  $('btnClearKey').addEventListener('click', () => {
+    localStorage.removeItem('uscale_api_key');
+    $('inputApiKey').value = '';
+  });
+
+  // Pilihan Engine
+  document.querySelectorAll('.engine-card').forEach(card => {
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.engine-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      state.engine = card.dataset.engine;
+      $('cloudModelGroup').style.display = state.engine === 'cloud' ? 'flex' : 'none';
+    });
+  });
+
+  // Pilihan Skala
+  document.querySelectorAll('.pill').forEach(pill => {
+    pill.addEventListener('click', () => {
+      document.querySelectorAll('.pill').forEach(p => p.classList.remove('active'));
+      pill.classList.add('active');
+      state.scale = parseInt(pill.dataset.scale, 10);
+      updateResolutionCalc();
+    });
+  });
+
+  // Sliders & Checkboxes
+  $('sharpRange').addEventListener('input', (e) => {
+    state.sharpness = parseInt(e.target.value, 10);
+    $('sharpVal').textContent = state.sharpness + '%';
+  });
+  $('denoiseRange').addEventListener('input', (e) => {
+    state.denoise = parseInt(e.target.value, 10);
+    $('denoiseVal').textContent = state.denoise + '%';
+  });
+  $('chk300Dpi').addEventListener('change', (e) => state.inject300Dpi = e.target.checked);
+  $('chkHdr').addEventListener('change', (e) => state.hdr = e.target.checked);
+
+  // Upload & Drag-Drop
+  $('btnUploadTrigger').addEventListener('click', () => fileInput.click());
+  dropzone.addEventListener('click', () => fileInput.click());
+  $('viewerArea').addEventListener('dragover', (e) => e.preventDefault());
+  $('viewerArea').addEventListener('drop', (e) => {
+    e.preventDefault();
+    if (e.dataTransfer.files.length) handleFiles(e.dataTransfer.files);
+  });
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files.length) handleFiles(e.target.files);
+  });
+
+  function formatNum(n) {
+    return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  }
+
+  function handleFiles(fileList) {
+    Array.from(fileList).forEach(file => {
+      if (!file.type.startsWith('image/')) return;
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          state.items.push({
+            id: Date.now() + Math.random(),
+            name: file.name.replace(/\.[^/.]+$/, ''),
+            origUrl: ev.target.result,
+            origW: img.width,
+            origH: img.height,
+            outUrl: null,
+            status: 'Siap'
+          });
+          if (state.activeIndex === -1) selectItem(0);
+          renderBatchStrip();
+          $('btnProcess').disabled = false;
+          $('btnProcessAll').disabled = state.items.length < 2;
+        };
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function renderBatchStrip() {
+    const strip = $('batchStrip');
+    if (state.items.length === 0) {
+      strip.style.display = 'none';
+      return;
+    }
+    strip.style.display = 'flex';
+    strip.innerHTML = state.items.map((item, idx) => `
+      <div class="batch-item ${idx === state.activeIndex ? 'active' : ''}" onclick="selectItem(${idx})">
+        <img src="${item.outUrl || item.origUrl}" />
+        <span class="batch-status">${item.status}</span>
+      </div>
+    `).join('');
+  }
+
+  window.selectItem = function(idx) {
+    state.activeIndex = idx;
+    const item = state.items[idx];
+    if (!item) return;
+
+    dropzone.style.display = 'none';
+    compareWrapper.style.display = 'block';
+    imgBefore.src = item.origUrl;
+    imgAfter.src = item.outUrl || item.origUrl;
+    $('badgeAfterLabel').textContent = item.outUrl ? `SESUDAH (${state.scale}x)` : 'PRATINJAU ASLI';
+    $('btnDownload').disabled = !item.outUrl;
+    $('btnZoomToggle').disabled = false;
+
+    setTimeout(syncComparisonDimensions, 50);
+    updateResolutionCalc();
+    renderBatchStrip();
+  };
+
+  function updateResolutionCalc() {
+    const item = state.items[state.activeIndex];
+    if (!item) return;
+    const tW = item.origW * state.scale;
+    const tH = item.origH * state.scale;
+
+    $('infoOrigRes').textContent = `${formatNum(item.origW)} × ${formatNum(item.origH)} px`;
+    $('infoTargetRes').textContent = `${formatNum(tW)} × ${formatNum(tH)} px`;
+
+    const photoW = (tW / 118.11).toFixed(1).replace('.', ',');
+    const photoH = (tH / 118.11).toFixed(1).replace('.', ',');
+    $('infoPrintPhoto').textContent = `${photoW} × ${photoH} cm`;
+
+    const banW = (tW / 59.05).toFixed(1).replace('.', ',');
+    const banH = (tH / 59.05).toFixed(1).replace('.', ',');
+    $('infoPrintBanner').textContent = `${banW} × ${banH} cm`;
+  }
+
+  // Split Slider Interaction
+  function syncComparisonDimensions() {
+    if (imgAfter.clientWidth > 0) {
+      imgBefore.style.width = imgAfter.clientWidth + 'px';
+      imgBefore.style.height = imgAfter.clientHeight + 'px';
+    }
+  }
+  window.addEventListener('resize', syncComparisonDimensions);
+
+  let isDragging = false;
+  sliderHandle.addEventListener('mousedown', () => isDragging = true);
+  sliderHandle.addEventListener('touchstart', () => isDragging = true);
+  window.addEventListener('mouseup', () => isDragging = false);
+  window.addEventListener('touchend', () => isDragging = false);
+
+  function moveSlider(clientX) {
+    if (!isDragging) return;
+    const rect = compareWrapper.getBoundingClientRect();
+    let pct = ((clientX - rect.left) / rect.width) * 100;
+    pct = Math.max(0, Math.min(100, pct));
+    beforeLayer.style.width = pct + '%';
+    sliderHandle.style.left = pct + '%';
+  }
+  window.addEventListener('mousemove', (e) => moveSlider(e.clientX));
+  window.addEventListener('touchmove', (e) => moveSlider(e.touches[0].clientX));
+
+  // Zoom Toggle
+  $('btnZoomToggle').addEventListener('click', () => {
+    state.isZoomed = !state.isZoomed;
+    if (state.isZoomed) {
+      imgAfter.style.maxHeight = 'none';
+      imgAfter.style.maxWidth = 'none';
+      compareWrapper.style.maxHeight = '70vh';
+      compareWrapper.style.overflow = 'auto';
+      $('btnZoomToggle').textContent = '🔎 Fit ke Layar';
+    } else {
+      imgAfter.style.maxHeight = '70vh';
+      imgAfter.style.maxWidth = '100%';
+      compareWrapper.style.overflow = 'hidden';
+      $('btnZoomToggle').textContent = '🔍 Zoom 100% Asli';
+    }
+    setTimeout(syncComparisonDimensions, 50);
+  });
+
+  // =========================================================================
+  // INJEKSI METADATA 300 DPI ASLI (PNG pHYs CHUNK & JPEG JFIF APP0)
+  // =========================================================================
+  function inject300DpiToDataUrl(dataUrl, mimeType) {
+    if (!state.inject300Dpi) return dataUrl;
+
+    const base64 = dataUrl.split(',')[1];
+    const binStr = atob(base64);
+    const bytes = new Uint8Array(binStr.length);
+    for (let i = 0; i < binStr.length; i++) bytes[i] = binStr.charCodeAt(i);
+
+    // 1. Jika JPEG: Ubah JFIF APP0 density menjadi 300x300 DPI (0x012C)
+    if (mimeType === 'image/jpeg' && bytes[0] === 0xFF && bytes[1] === 0xD8 && bytes[2] === 0xFF && bytes[3] === 0xE0) {
+      bytes[13] = 0x01; // Unit: Dots Per Inch
+      bytes[14] = 0x01; bytes[15] = 0x2C; // X = 300
+      bytes[16] = 0x01; bytes[17] = 0x2C; // Y = 300
+      return uint8ToDataUrl(bytes, mimeType);
+    }
+
+    // 2. Jika PNG: Sisipkan chunk pHYs (11811 px/meter = 300 DPI) setelah IHDR (byte ke-33)
+    if (mimeType === 'image/png' && bytes[0] === 0x89 && bytes[1] === 0x50) {
+      const physChunk = new Uint8Array([
+        0x00, 0x00, 0x00, 0x09, // Panjang data = 9 byte
+        0x70, 0x48, 0x59, 0x73, // "pHYs"
+        0x00, 0x00, 0x2E, 0x23, // X: 11811 px/m (300 DPI)
+        0x00, 0x00, 0x2E, 0x23, // Y: 11811 px/m (300 DPI)
+        0x01,                   // Unit: Meter
+        0x00, 0x00, 0x00, 0x00  // Placeholder CRC32
+      ]);
+      const crc = crc32(physChunk.subarray(4, 17));
+      physChunk[17] = (crc >>> 24) & 0xFF;
+      physChunk[18] = (crc >>> 16) & 0xFF;
+      physChunk[19] = (crc >>> 8) & 0xFF;
+      physChunk[20] = crc & 0xFF;
+
+      const combined = new Uint8Array(bytes.length + physChunk.length);
+      combined.set(bytes.subarray(0, 33), 0);
+      combined.set(physChunk, 33);
+      combined.set(bytes.subarray(33), 33 + physChunk.length);
+      return uint8ToDataUrl(combined, mimeType);
+    }
+
+    return dataUrl;
+  }
+
+  function uint8ToDataUrl(bytes, mimeType) {
+    let binary = '';
+    const chunkSize = 0x8000;
+    for (let i = 0; i < bytes.length; i += chunkSize) {
+      binary += String.fromCharCode.apply(null, bytes.subarray(i, i + chunkSize));
+    }
+    return `data:${mimeType};base64,` + btoa(binary);
+  }
+
+  function crc32(buf) {
+    let crc = 0xFFFFFFFF;
+    for (let i = 0; i < buf.length; i++) {
+      crc ^= buf[i];
+      for (let j = 0; j < 8; j++) {
+        crc = (crc & 1) ? (0xEDB88320 ^ (crc >>> 1)) : (crc >>> 1);
+      }
+    }
+    return (crc ^ 0xFFFFFFFF) >>> 0;
+  }
+
+  // =========================================================================
+  // MESIN 1: AI NEURAL ESRGAN DI BROWSER (100% GRATIS VIA TENSORFLOW.JS)
+  // =========================================================================
+  async function initEsrganModel() {
+    if (state.upscalerInstance) return state.upscalerInstance;
+    if (typeof window.Upscaler === 'undefined') {
+      throw new Error('Library AI Neural belum selesai dimuat. Pastikan koneksi internet aktif.');
+    }
+    const model = window.DefaultUpscalerJSModel || undefined;
+    state.upscalerInstance = new window.Upscaler({ model });
+    return state.upscalerInstance;
+  }
+
+  async function processEsrganBrowserUpscale(item) {
+    const upscaler = await initEsrganModel();
+    const img = new Image();
+    img.src = item.origUrl;
+    await new Promise((res) => (img.onload = res));
+
+    // Tahap 1: Jalankan Deep Learning ESRGAN (2x Neural Reconstruction dengan Tiling anti-lag)
+    $('loaderTitle').textContent = 'AI Neural ESRGAN Membangun Detail...';
+    const aiDataUrl = await upscaler.upscale(img, {
+      output: 'base64',
+      patchSize: 64,
+      padding: 4,
+      progress: (percent) => {
+        const pct = Math.round(percent * 100);
+        $('progressFill').style.width = pct + '%';
+        $('loaderSub').textContent = `Rekonstruksi Jaringan Saraf: ${pct}%`;
+      }
+    });
+
+    // Tahap 2: Sesuaikan ke skala target akhir (2x/4x/6x/8x) + Edge Sharpening & 300 DPI
+    $('loaderTitle').textContent = 'Finalisasi Resolusi & Metadata 300 DPI...';
+    const targetW = item.origW * state.scale;
+    const targetH = item.origH * state.scale;
+    return await refineCanvasOutput(aiDataUrl, targetW, targetH);
+  }
+
+  // =========================================================================
+  // MESIN 2: TURBO EDGE-SHARPEN & REFINEMENT ENGINE
+  // =========================================================================
+  async function refineCanvasOutput(sourceUrl, targetW, targetH) {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.onload = () => {
+        let curCanvas = document.createElement('canvas');
+        curCanvas.width = img.width;
+        curCanvas.height = img.height;
+        curCanvas.getContext('2d').drawImage(img, 0, 0);
+
+        let curW = img.width;
+        let curH = img.height;
+
+        while (curW < targetW) {
+          const nextW = Math.min(targetW, Math.round(curW * 1.5));
+          const nextH = Math.min(targetH, Math.round(curH * 1.5));
+          const stepCanvas = document.createElement('canvas');
+          stepCanvas.width = nextW;
+          stepCanvas.height = nextH;
+          const stepCtx = stepCanvas.getContext('2d');
+          stepCtx.imageSmoothingEnabled = true;
+          stepCtx.imageSmoothingQuality = 'high';
+          stepCtx.drawImage(curCanvas, 0, 0, nextW, nextH);
+          curCanvas = stepCanvas;
+          curW = nextW;
+          curH = nextH;
+        }
+
+        const finalCtx = curCanvas.getContext('2d');
+        const imgData = finalCtx.getImageData(0, 0, targetW, targetH);
+        const data = imgData.data;
+        const copy = new Uint8ClampedArray(data);
+
+        const sharpAmount = (state.sharpness / 100) * 0.6;
+        const hdrBoost = state.hdr ? 1.08 : 1.0;
+
+        for (let y = 1; y < targetH - 1; y++) {
+          for (let x = 1; x < targetW - 1; x++) {
+            const idx = (y * targetW + x) * 4;
+            for (let c = 0; c < 3; c++) {
+              const center = copy[idx + c];
+              const top = copy[((y - 1) * targetW + x) * 4 + c];
+              const bottom = copy[((y + 1) * targetW + x) * 4 + c];
+              const left = copy[(y * targetW + (x - 1)) * 4 + c];
+              const right = copy[(y * targetW + (x + 1)) * 4 + c];
+
+              const blur = (top + bottom + left + right) * 0.25;
+              const edgeDiff = center - blur;
+              const noiseGate = (state.denoise / 100) * 14;
+
+              let val = Math.abs(edgeDiff) > noiseGate
+                ? center + edgeDiff * sharpAmount
+                : center * 0.72 + blur * 0.28;
+
+              if (state.hdr) {
+                val = ((val / 255 - 0.5) * hdrBoost + 0.5) * 255;
+              }
+              data[idx + c] = Math.max(0, Math.min(255, val));
+            }
+          }
+        }
+
+        finalCtx.putImageData(imgData, 0, 0);
+        const format = $('exportFormat').value;
+        const rawDataUrl = curCanvas.toDataURL(format, 0.96);
+        resolve(inject300DpiToDataUrl(rawDataUrl, format));
+      };
+      img.src = sourceUrl;
+    });
+  }
+
+  // =========================================================================
+  // MESIN 3: CLOUD GPU GENERATIVE AI (OPSIONAL)
+  // =========================================================================
+  async function processCloudUpscale(item) {
+    const customKey = localStorage.getItem('uscale_api_key') || '';
+    const response = await fetch('/api/upscale', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(customKey ? { 'X-Custom-Api-Key': customKey } : {})
+      },
+      body: JSON.stringify({
+        image: item.origUrl,
+        scale: state.scale,
+        faceEnhance: true,
+        modelType: $('cloudModelSelect').value
+      })
+    });
+
+    const result = await response.json();
+    if (!response.ok) {
+      throw new Error(result.error || 'Gagal terhubung ke Cloud GPU.');
+    }
+    return result.outputUrl;
+  }
+
+  // Eksekusi Pemrosesan
+  async function processSingle(idx) {
+    const item = state.items[idx];
+    if (!item) return;
+
+    $('loaderOverlay').style.display = 'flex';
+    $('progressFill').style.width = '10%';
+    $('progressTrack').style.display = state.engine === 'esrgan_local' ? 'block' : 'none';
+
+    try {
+      let outputUrl;
+      if (state.engine === 'esrgan_local') {
+        outputUrl = await processEsrganBrowserUpscale(item);
+      } else if (state.engine === 'fast_local') {
+        $('loaderTitle').textContent = 'Memproses Turbo Edge-Sharpen...';
+        $('loaderSub').textContent = `Meningkatkan resolusi ${state.scale}x + 300 DPI`;
+        outputUrl = await refineCanvasOutput(item.origUrl, item.origW * state.scale, item.origH * state.scale);
+      } else {
+        $('loaderTitle').textContent = 'Menjalankan Cloud GPU AI...';
+        $('loaderSub').textContent = `Memproses ${item.name} di server GPU`;
+        outputUrl = await processCloudUpscale(item);
+      }
+
+      item.outUrl = outputUrl;
+      item.status = `${state.scale}x ✓`;
+      selectItem(idx);
+    } catch (err) {
+      alert('Perhatian: ' + err.message);
+      item.status = 'Gagal';
+      renderBatchStrip();
+    } finally {
+      $('loaderOverlay').style.display = 'none';
+    }
+  }
+
+  $('btnProcess').addEventListener('click', () => processSingle(state.activeIndex));
+
+  $('btnProcessAll').addEventListener('click', async () => {
+    for (let i = 0; i < state.items.length; i++) {
+      await processSingle(i);
+    }
+  });
+
+  // Unduh Hasil
+  $('btnDownload').addEventListener('click', async () => {
+    const item = state.items[state.activeIndex];
+    if (!item || !item.outUrl) return;
+
+    const extMap = { 'image/png': 'png', 'image/jpeg': 'jpg', 'image/webp': 'webp' };
+    const ext = extMap[$('exportFormat').value] || 'png';
+    const dpiTag = state.inject300Dpi ? '_300DPI' : '';
+    const fileName = `${item.name}_UltraScale_${state.scale}x${dpiTag}.${ext}`;
+
+    if (item.outUrl.startsWith('http')) {
+      const res = await fetch(item.outUrl);
+      const blob = await res.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = fileName;
+      a.click();
+      URL.revokeObjectURL(blobUrl);
+    } else {
+      const a = document.createElement('a');
+      a.href = item.outUrl;
+      a.download = fileName;
+      a.click();
+    }
+  });
+
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js').catch(() => {});
+  }
+</script>
+</body>
+</html>
