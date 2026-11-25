@@ -6,12 +6,12 @@ env.backends.onnx.wasm.proxy = false;
 env.backends.onnx.wasm.numThreads = 1;
 
 const state = {
-  engine: 'swin2sr_ai',
+  engine: 'swin2sr_photo',
   scale: 4,
-  sharpness: 75,
-  grain: 30,
+  sharpness: 45,
+  grain: 40,
   inject300Dpi: true,
-  naturalTone: true,
+  colorLock: true,
   items: [],
   activeIndex: -1,
   isZoomed: false,
@@ -60,10 +60,10 @@ $('btnClearKey').addEventListener('click', () => {
 // PRESET CERDAS 1-KLIK
 // =========================================================================
 const presets = {
-  portrait: { engine: 'swin2sr_ai', sharpness: 75, grain: 30, tone: true },
-  banner:   { engine: 'vector_edge', sharpness: 90, grain: 0, tone: true },
-  product:  { engine: 'swin2sr_ai', sharpness: 85, grain: 10, tone: true },
-  logo:     { engine: 'vector_edge', sharpness: 95, grain: 0, tone: false }
+  portrait: { engine: 'swin2sr_photo', sharpness: 45, grain: 40, colorLock: true },
+  banner:   { engine: 'vector_edge',   sharpness: 88, grain: 0,  colorLock: true },
+  product:  { engine: 'swin2sr_photo', sharpness: 65, grain: 15, colorLock: true },
+  logo:     { engine: 'vector_edge',   sharpness: 95, grain: 0,  colorLock: false }
 };
 
 document.querySelectorAll('.preset-btn').forEach(btn => {
@@ -82,8 +82,8 @@ document.querySelectorAll('.preset-btn').forEach(btn => {
     $('grainRange').value = p.grain;
     $('grainVal').textContent = p.grain + '%';
 
-    state.naturalTone = p.tone;
-    $('chkNaturalTone').checked = p.tone;
+    state.colorLock = p.colorLock;
+    $('chkColorLock').checked = p.colorLock;
   });
 });
 
@@ -122,7 +122,7 @@ $('grainRange').addEventListener('input', (e) => {
 });
 
 $('chk300Dpi').addEventListener('change', (e) => state.inject300Dpi = e.target.checked);
-$('chkNaturalTone').addEventListener('change', (e) => state.naturalTone = e.target.checked);
+$('chkColorLock').addEventListener('change', (e) => state.colorLock = e.target.checked);
 
 // =========================================================================
 // UNGGAH & DRAG-DROP GAMBAR
@@ -227,17 +227,14 @@ function updateResolutionCalc() {
   $('infoOrigRes').textContent = `${formatNum(item.origW)} × ${formatNum(item.origH)} px`;
   $('infoTargetRes').textContent = `${formatNum(tW)} × ${formatNum(tH)} px`;
 
-  // 300 DPI (118.11 px/cm)
   const pW = (tW / 118.11).toFixed(1).replace('.', ',');
   const pH = (tH / 118.11).toFixed(1).replace('.', ',');
   $('infoPrintPhoto').textContent = `${pW} × ${pH} cm`;
 
-  // 150 DPI (59.05 px/cm)
   const bW = (tW / 59.05).toFixed(1).replace('.', ',');
   const bH = (tH / 59.05).toFixed(1).replace('.', ',');
   $('infoPrintBanner').textContent = `${bW} × ${bH} cm`;
 
-  // 72 DPI Outdoor Spanduk/Baliho (28.35 px/cm)
   const oW = (tW / 2835).toFixed(2).replace('.', ',');
   const oH = (tH / 2835).toFixed(2).replace('.', ',');
   $('infoPrintOutdoor').textContent = `${oW} × ${oH} m`;
@@ -373,7 +370,57 @@ function crc32(buf) {
 }
 
 // =========================================================================
-// MESIN 1: AI SWIN2SR (SAFE WEBGPU / WASM) + NATURAL REALISM
+// HELPER: MULTI-STEP PROGRESSIVE RESIZE
+// =========================================================================
+function loadImageAsync(url) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = url;
+  });
+}
+
+function progressiveResizeToCanvas(img, targetW, targetH) {
+  let curCanvas = document.createElement('canvas');
+  curCanvas.width = img.width;
+  curCanvas.height = img.height;
+  curCanvas.getContext('2d').drawImage(img, 0, 0);
+
+  let curW = img.width;
+  let curH = img.height;
+
+  while (curW < targetW) {
+    const nextW = Math.min(targetW, Math.round(curW * 1.45));
+    const nextH = Math.min(targetH, Math.round(curH * 1.45));
+    const stepCanvas = document.createElement('canvas');
+    stepCanvas.width = nextW;
+    stepCanvas.height = nextH;
+    const stepCtx = stepCanvas.getContext('2d');
+    stepCtx.imageSmoothingEnabled = true;
+    stepCtx.imageSmoothingQuality = 'high';
+    stepCtx.drawImage(curCanvas, 0, 0, nextW, nextH);
+    curCanvas = stepCanvas;
+    curW = nextW;
+    curH = nextH;
+  }
+
+  if (curW > targetW) {
+    const downCanvas = document.createElement('canvas');
+    downCanvas.width = targetW;
+    downCanvas.height = targetH;
+    const downCtx = downCanvas.getContext('2d');
+    downCtx.imageSmoothingEnabled = true;
+    downCtx.imageSmoothingQuality = 'high';
+    downCtx.drawImage(curCanvas, 0, 0, targetW, targetH);
+    curCanvas = downCanvas;
+  }
+
+  return curCanvas;
+}
+
+// =========================================================================
+// MESIN 1: AI SWIN2SR PHOTOREAL + ORIGINAL COLOR LOCK + MICRO-PORE SYNTHESIS
 // =========================================================================
 async function getSwin2SrPipeline() {
   if (state.aiPipeline) return state.aiPipeline;
@@ -408,20 +455,20 @@ async function getSwin2SrPipeline() {
   return state.aiPipeline;
 }
 
-async function processSwin2SrUpscale(item) {
+async function processPhotorealAiUpscale(item) {
   const totalPixels = item.origW * item.origH;
   const { tW, tH } = getSafeTargetDimensions(item.origW, item.origH, state.scale);
 
-  // Jika file sudah berukuran banner besar (> 1.8 MP), arahkan ke Vector-Edge De-Blur agar tulisan aman & browser tidak hang
+  // Jika file sudah berukuran besar (> 1.8 MP), arahkan ke Vector-Edge Print De-Blur agar aman
   if (totalPixels > 1800000) {
-    $('loaderTitle').textContent = 'File Desain/Banner HD — Mengaktifkan Vector-Edge De-Blur...';
-    $('loaderSub').textContent = 'Menjaga ketajaman huruf & garis cetak 300 DPI';
-    return await applyVectorEdgeAndRealism(item.origUrl, tW, tH, true);
+    $('loaderTitle').textContent = 'File Resolusi Tinggi — Mengaktifkan Vector-Edge Print...';
+    $('loaderSub').textContent = 'Menjaga ketajaman detail & huruf cetak 300 DPI';
+    return await processVectorEdgePrint(item.origUrl, tW, tH);
   }
 
   const upscaler = await getSwin2SrPipeline();
 
-  $('loaderTitle').textContent = 'AI Swin2SR Merekonstruksi Detail Wajah & Tekstur...';
+  $('loaderTitle').textContent = 'AI Swin2SR Merekonstruksi Struktur Wajah...';
   $('loaderSub').textContent = 'Tahap 1/2: Deep Learning Super-Resolution berjalan...';
   $('progressFill').style.width = '75%';
   await new Promise(r => setTimeout(r, 40));
@@ -434,134 +481,148 @@ async function processSwin2SrUpscale(item) {
   stdCanvas.getContext('2d').drawImage(aiCanvas, 0, 0);
   const aiDataUrl = stdCanvas.toDataURL('image/png');
 
-  $('loaderTitle').textContent = 'Menyuntikkan Ketajaman Mikro & Natural Skin Texture...';
-  $('loaderSub').textContent = 'Tahap 2/2: Finalisasi realisme fotografi & 300 DPI...';
+  $('loaderTitle').textContent = 'Sintesis Pori Kulit Alami & Original Color Lock...';
+  $('loaderSub').textContent = 'Tahap 2/2: Menghilangkan efek kartun & injeksi 300 DPI...';
   $('progressFill').style.width = '100%';
   await new Promise(r => setTimeout(r, 30));
 
-  return await applyVectorEdgeAndRealism(aiDataUrl, tW, tH, false);
+  const [origImg, aiImg] = await Promise.all([
+    loadImageAsync(item.origUrl),
+    loadImageAsync(aiDataUrl)
+  ]);
+
+  const origCanvas = progressiveResizeToCanvas(origImg, tW, tH);
+  const finalCanvas = progressiveResizeToCanvas(aiImg, tW, tH);
+
+  const origData = origCanvas.getContext('2d').getImageData(0, 0, tW, tH).data;
+  const finalCtx = finalCanvas.getContext('2d');
+  const imgData = finalCtx.getImageData(0, 0, tW, tH);
+  const data = imgData.data;
+  const copy = new Uint8ClampedArray(data);
+
+  // Parameter fotografi alami (ANTI-KARTUN: tidak ada sigmoid shock filter di mode foto!)
+  const clarityGain = (state.sharpness / 100) * 0.65;
+  const poreStrength = (state.grain / 100) * 9.5;
+
+  // Generator noise Gaussian/organik multi-frekuensi untuk mensimulasikan pori kulit & sensor kamera
+  let s1 = 1337, s2 = 7331;
+  function organicMicroTexture(x, y) {
+    s1 = (s1 * 16807) % 2147483647;
+    s2 = (s2 * 48271) % 2147483647;
+    const fine = ((s1 / 2147483647) + (s2 / 2147483647) - 1.0); // Distribusi triangular (lebih alami dari uniform)
+    // Gelombang mikro halus mirip pori kulit 2-3 piksel
+    const porePattern = Math.sin(x * 1.15 + Math.cos(y * 0.95)) * 0.35;
+    return (fine * 0.75 + porePattern * 0.25);
+  }
+
+  for (let y = 1; y < tH - 1; y++) {
+    for (let x = 1; x < tW - 1; x++) {
+      const idx = (y * tW + x) * 4;
+
+      // 1. High-Pass Luminance Clarity (Hanya menajamkan kecerahan, BUKAN warna, agar tepi tidak seperti garis kartun)
+      const lumC = 0.299 * copy[idx] + 0.587 * copy[idx + 1] + 0.114 * copy[idx + 2];
+      const lumN = 0.299 * copy[((y - 1) * tW + x) * 4] + 0.587 * copy[((y - 1) * tW + x) * 4 + 1] + 0.114 * copy[((y - 1) * tW + x) * 4 + 2];
+      const lumS = 0.299 * copy[((y + 1) * tW + x) * 4] + 0.587 * copy[((y + 1) * tW + x) * 4 + 1] + 0.114 * copy[((y + 1) * tW + x) * 4 + 2];
+      const lumW = 0.299 * copy[(y * tW + (x - 1)) * 4] + 0.587 * copy[(y * tW + (x - 1)) * 4 + 1] + 0.114 * copy[(y * tW + (x - 1)) * 4 + 2];
+      const lumE = 0.299 * copy[(y * tW + (x + 1)) * 4] + 0.587 * copy[(y * tW + (x + 1)) * 4 + 1] + 0.114 * copy[(y * tW + (x + 1)) * 4 + 2];
+
+      const lumAvg = (lumN + lumS + lumW + lumE) * 0.25;
+      const highPass = (lumC - lumAvg) * clarityGain;
+
+      // 2. Hitung deteksi area kulit / midtone untuk menyuntikkan tekstur pori alami
+      const rAi = copy[idx], gAi = copy[idx + 1], bAi = copy[idx + 2];
+      const isSkinOrMidtone = (lumC > 45 && lumC < 225) ? 1.0 : 0.35;
+      const microTex = poreStrength > 0 ? organicMicroTexture(x, y) * poreStrength * isSkinOrMidtone : 0;
+
+      // 3. Original Color Lock: Ambil krominansi (warna asli) dari gambar original agar wajah tidak pucat/oranye
+      let rOut = rAi + highPass + microTex;
+      let gOut = gAi + highPass + microTex * 0.92;
+      let bOut = bAi + highPass + microTex * 0.85;
+
+      if (state.colorLock) {
+        const lumOrig = 0.299 * origData[idx] + 0.587 * origData[idx + 1] + 0.114 * origData[idx + 2];
+        const lumNew = 0.299 * rOut + 0.587 * gOut + 0.114 * bOut;
+        const deltaLum = lumNew - lumOrig;
+
+        // Gabungkan 80% warna asli dari foto original + 20% warna AI, lalu terapkan pencahayaan tajam dari AI
+        rOut = (origData[idx] * 0.80 + rAi * 0.20) + deltaLum;
+        gOut = (origData[idx + 1] * 0.80 + gAi * 0.20) + deltaLum;
+        bOut = (origData[idx + 2] * 0.80 + bAi * 0.20) + deltaLum;
+      }
+
+      data[idx]     = Math.max(0, Math.min(255, rOut));
+      data[idx + 1] = Math.max(0, Math.min(255, gOut));
+      data[idx + 2] = Math.max(0, Math.min(255, bOut));
+    }
+  }
+
+  finalCtx.putImageData(imgData, 0, 0);
+  const format = $('exportFormat').value;
+  const rawDataUrl = finalCanvas.toDataURL(format, 0.96);
+  return inject300DpiToDataUrl(rawDataUrl, format);
 }
 
 // =========================================================================
-// MESIN 2: VECTOR-EDGE DE-BLUR (SIGMOIDAL SHOCK FILTER UNTUK TULISAN & BANNER)
+// MESIN 2: VECTOR-EDGE PRINT DE-BLUR (KHUSUS BANNER, TULISAN & LOGO)
 // =========================================================================
-async function applyVectorEdgeAndRealism(sourceUrl, targetW, targetH, isVectorBannerMode) {
-  return new Promise((resolve) => {
-    const img = new Image();
-    img.onload = () => {
-      let curCanvas = document.createElement('canvas');
-      curCanvas.width = img.width;
-      curCanvas.height = img.height;
-      curCanvas.getContext('2d').drawImage(img, 0, 0);
+async function processVectorEdgePrint(sourceUrl, targetW, targetH) {
+  const img = await loadImageAsync(sourceUrl);
+  const curCanvas = progressiveResizeToCanvas(img, targetW, targetH);
 
-      let curW = img.width;
-      let curH = img.height;
+  const finalCtx = curCanvas.getContext('2d');
+  const imgData = finalCtx.getImageData(0, 0, targetW, targetH);
+  const data = imgData.data;
+  const copy = new Uint8ClampedArray(data);
 
-      while (curW < targetW) {
-        const nextW = Math.min(targetW, Math.round(curW * 1.45));
-        const nextH = Math.min(targetH, Math.round(curH * 1.45));
-        const stepCanvas = document.createElement('canvas');
-        stepCanvas.width = nextW;
-        stepCanvas.height = nextH;
-        const stepCtx = stepCanvas.getContext('2d');
-        stepCtx.imageSmoothingEnabled = true;
-        stepCtx.imageSmoothingQuality = 'high';
-        stepCtx.drawImage(curCanvas, 0, 0, nextW, nextH);
-        curCanvas = stepCanvas;
-        curW = nextW;
-        curH = nextH;
-      }
+  // Radius pemindaian tepi menyesuaikan skala pembesaran agar menangkap seluruh area buram huruf
+  const radius = Math.max(2, Math.min(6, state.scale));
+  const sharpNorm = state.sharpness / 100;
+  const steepPower = 1.0 + sharpNorm * 3.4;
+  const detailBoost = sharpNorm * 0.65;
 
-      if (curW > targetW) {
-        const downCanvas = document.createElement('canvas');
-        downCanvas.width = targetW;
-        downCanvas.height = targetH;
-        const downCtx = downCanvas.getContext('2d');
-        downCtx.imageSmoothingEnabled = true;
-        downCtx.imageSmoothingQuality = 'high';
-        downCtx.drawImage(curCanvas, 0, 0, targetW, targetH);
-        curCanvas = downCanvas;
-      }
+  for (let y = radius; y < targetH - radius; y++) {
+    for (let x = radius; x < targetW - radius; x++) {
+      const idx = (y * targetW + x) * 4;
 
-      const finalCtx = curCanvas.getContext('2d');
-      const imgData = finalCtx.getImageData(0, 0, targetW, targetH);
-      const data = imgData.data;
-      const copy = new Uint8ClampedArray(data);
+      for (let c = 0; c < 3; c++) {
+        const center = copy[idx + c];
 
-      const radius = isVectorBannerMode
-        ? Math.max(2, Math.min(6, state.scale))
-        : 2;
+        const n = copy[((y - radius) * targetW + x) * 4 + c];
+        const s = copy[((y + radius) * targetW + x) * 4 + c];
+        const w = copy[(y * targetW + (x - radius)) * 4 + c];
+        const e = copy[(y * targetW + (x + radius)) * 4 + c];
+        const nw = copy[((y - radius) * targetW + (x - radius)) * 4 + c];
+        const ne = copy[((y - radius) * targetW + (x + radius)) * 4 + c];
+        const sw = copy[((y + radius) * targetW + (x - radius)) * 4 + c];
+        const se = copy[((y + radius) * targetW + (x + radius)) * 4 + c];
 
-      const sharpNorm = state.sharpness / 100;
-      const steepPower = isVectorBannerMode
-        ? 1.0 + sharpNorm * 3.2
-        : 1.0 + sharpNorm * 1.1;
+        const minVal = Math.min(center, n, s, w, e, nw, ne, sw, se);
+        const maxVal = Math.max(center, n, s, w, e, nw, ne, sw, se);
+        const range = maxVal - minVal;
 
-      const detailBoost = isVectorBannerMode
-        ? sharpNorm * 0.55
-        : sharpNorm * 0.75;
+        let val = center;
 
-      const grainStrength = (state.grain / 100) * 7.5;
-
-      let seed = 1337;
-      function fastRand() {
-        seed = (seed * 16807) % 2147483647;
-        return (seed - 1) / 2147483646 - 0.5;
-      }
-
-      for (let y = radius; y < targetH - radius; y++) {
-        for (let x = radius; x < targetW - radius; x++) {
-          const idx = (y * targetW + x) * 4;
-          const noise = grainStrength > 0 ? fastRand() * grainStrength : 0;
-
-          for (let c = 0; c < 3; c++) {
-            const center = copy[idx + c];
-
-            const n = copy[((y - radius) * targetW + x) * 4 + c];
-            const s = copy[((y + radius) * targetW + x) * 4 + c];
-            const w = copy[(y * targetW + (x - radius)) * 4 + c];
-            const e = copy[(y * targetW + (x + radius)) * 4 + c];
-            const nw = copy[((y - radius) * targetW + (x - radius)) * 4 + c];
-            const ne = copy[((y - radius) * targetW + (x + radius)) * 4 + c];
-            const sw = copy[((y + radius) * targetW + (x - radius)) * 4 + c];
-            const se = copy[((y + radius) * targetW + (x + radius)) * 4 + c];
-
-            const minVal = Math.min(center, n, s, w, e, nw, ne, sw, se);
-            const maxVal = Math.max(center, n, s, w, e, nw, ne, sw, se);
-            const range = maxVal - minVal;
-
-            let val = center;
-
-            if (range >= 14 && sharpNorm > 0) {
-              const t = (center - minVal) / range;
-              const steepT = t < 0.5
-                ? 0.5 * Math.pow(2 * t, steepPower)
-                : 1.0 - 0.5 * Math.pow(2 * (1 - t), steepPower);
-              val = minVal + steepT * range;
-            }
-
-            const localAvg = (n + s + w + e) * 0.15 + (nw + ne + sw + se) * 0.10;
-            val += (center - localAvg) * detailBoost;
-
-            if (state.naturalTone) {
-              const norm = Math.max(0, Math.min(1, val / 255));
-              const sCurve = norm - 0.03 * Math.sin(2 * Math.PI * norm);
-              val = sCurve * 255;
-            }
-
-            val += noise;
-            data[idx + c] = Math.max(0, Math.min(255, val));
-          }
+        // Sigmoidal Shock Filter: Memadatkan tepi buram huruf menjadi garis vektor tegas tanpa merubah bentuk font
+        if (range >= 14 && sharpNorm > 0) {
+          const t = (center - minVal) / range;
+          const steepT = t < 0.5
+            ? 0.5 * Math.pow(2 * t, steepPower)
+            : 1.0 - 0.5 * Math.pow(2 * (1 - t), steepPower);
+          val = minVal + steepT * range;
         }
-      }
 
-      finalCtx.putImageData(imgData, 0, 0);
-      const format = $('exportFormat').value;
-      const rawDataUrl = curCanvas.toDataURL(format, 0.96);
-      resolve(inject300DpiToDataUrl(rawDataUrl, format));
-    };
-    img.src = sourceUrl;
-  });
+        const localAvg = (n + s + w + e) * 0.15 + (nw + ne + sw + se) * 0.10;
+        val += (center - localAvg) * detailBoost;
+
+        data[idx + c] = Math.max(0, Math.min(255, val));
+      }
+    }
+  }
+
+  finalCtx.putImageData(imgData, 0, 0);
+  const format = $('exportFormat').value;
+  const rawDataUrl = curCanvas.toDataURL(format, 0.96);
+  return inject300DpiToDataUrl(rawDataUrl, format);
 }
 
 // =========================================================================
@@ -599,19 +660,19 @@ async function processSingle(idx) {
 
   $('loaderOverlay').style.display = 'flex';
   $('progressFill').style.width = '10%';
-  $('progressTrack').style.display = state.engine === 'swin2sr_ai' ? 'block' : 'none';
+  $('progressTrack').style.display = state.engine === 'swin2sr_photo' ? 'block' : 'none';
 
   try {
     let outputUrl;
     const { tW, tH } = getSafeTargetDimensions(item.origW, item.origH, state.scale);
 
-    if (state.engine === 'swin2sr_ai') {
-      outputUrl = await processSwin2SrUpscale(item);
+    if (state.engine === 'swin2sr_photo') {
+      outputUrl = await processPhotorealAiUpscale(item);
     } else if (state.engine === 'vector_edge') {
-      $('loaderTitle').textContent = 'Memproses Vector-Edge De-Blur...';
+      $('loaderTitle').textContent = 'Memproses Vector-Edge Print De-Blur...';
       $('loaderSub').textContent = `Memadatkan ketajaman tulisan & desain (${state.scale}x) + 300 DPI`;
       await new Promise(r => setTimeout(r, 30));
-      outputUrl = await applyVectorEdgeAndRealism(item.origUrl, tW, tH, true);
+      outputUrl = await processVectorEdgePrint(item.origUrl, tW, tH);
     } else {
       $('loaderTitle').textContent = 'Menjalankan Cloud GPU AI...';
       $('loaderSub').textContent = `Memproses ${item.name} di server GPU`;

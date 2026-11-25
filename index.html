@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UltraScale AI Studio Pro — Print Banner & Photo Super Resolution</title>
+  <title>UltraScale AI Studio 6.0 — Photorealistic & Print Master</title>
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#2563eb" />
   <link rel="stylesheet" href="style.css" />
@@ -13,7 +13,7 @@
 <header>
   <div class="brand">
     <span>UltraScale AI</span>
-    <span class="brand-badge">Pro Print & Photo 5.0</span>
+    <span class="brand-badge">Studio 6.0 Photoreal + Print</span>
   </div>
   <div class="header-actions">
     <button class="btn" id="btnOpenSettings" title="Pengaturan Cloud API Opsional">🔑 API Cloud</button>
@@ -26,9 +26,9 @@
   <aside class="sidebar">
     <!-- PRESET CERDAS -->
     <div class="control-group">
-      <div class="control-label">Preset Otomatis (1-Klik)</div>
+      <div class="control-label">1. Preset Otomatis (1-Klik)</div>
       <div class="preset-grid">
-        <button class="preset-btn active" data-preset="portrait">👤 Foto Wajah</button>
+        <button class="preset-btn active" data-preset="portrait">👤 Foto Wajah Alami</button>
         <button class="preset-btn" data-preset="banner">🪧 Banner & Tulisan</button>
         <button class="preset-btn" data-preset="product">📦 Foto Produk</button>
         <button class="preset-btn" data-preset="logo">🎨 Logo & Grafis</button>
@@ -37,28 +37,28 @@
 
     <!-- MESIN PEMROSES -->
     <div class="control-group">
-      <div class="control-label">1. Arsitektur Mesin Pemroses</div>
+      <div class="control-label">2. Arsitektur Mesin Pemroses</div>
       <div class="engine-list">
-        <div class="engine-card active" data-engine="swin2sr_ai" id="cardSwin">
+        <div class="engine-card active" data-engine="swin2sr_photo" id="cardSwin">
           <div>
-            <div class="engine-title">🤖 AI Swin2SR + Natural Realism</div>
-            <div class="engine-desc">Deep Learning rekonstruksi wajah, rambut & tekstur foto buram.</div>
+            <div class="engine-title">🤖 AI Swin2SR Photoreal + Micro-Pore</div>
+            <div class="engine-desc">Rekonstruksi saraf wajah/foto dengan tekstur kulit alami (anti-kartun).</div>
           </div>
           <span class="tag-free">AI GRATIS</span>
         </div>
 
         <div class="engine-card" data-engine="vector_edge" id="cardVector">
           <div>
-            <div class="engine-title">🪧 Vector-Edge De-Blur (Banner/Teks)</div>
-            <div class="engine-desc">Memadatkan tepi huruf & desain cetak agar tajam tanpa mengubah bentuk tulisan.</div>
+            <div class="engine-title">🪧 Vector-Edge Print De-Blur (Instan)</div>
+            <div class="engine-desc">Memadatkan tepi huruf & desain cetak tanpa merubah bentuk font.</div>
           </div>
           <span class="tag-free">INSTAN</span>
         </div>
 
         <div class="engine-card" data-engine="cloud" id="cardCloud">
           <div>
-            <div class="engine-title">🧠 Cloud GPU Generative</div>
-            <div class="engine-desc">Server NVIDIA A100 (Memerlukan API Key Replicate).</div>
+            <div class="engine-title">🧠 Cloud GPU Generative (GFPGAN/ESRGAN)</div>
+            <div class="engine-desc">Server NVIDIA A100 kelas studio (API Key Replicate opsional).</div>
           </div>
           <span class="tag-pro">OPSIONAL</span>
         </div>
@@ -68,13 +68,13 @@
     <div class="control-group" id="cloudModelGroup" style="display:none;">
       <div class="control-label">Model AI Cloud GPU</div>
       <select id="cloudModelSelect">
-        <option value="esrgan">Real-ESRGAN 4x+ (Foto, Produk, Desain & Wajah)</option>
+        <option value="esrgan">Real-ESRGAN 4x+ + GFPGAN Face Restore (Terbaik untuk Wajah)</option>
         <option value="clarity">Clarity Generative Upscaler (Ultra Detail & Tekstur)</option>
       </select>
     </div>
 
     <div class="control-group">
-      <div class="control-label">2. Faktor Pembesaran (Scale)</div>
+      <div class="control-label">3. Faktor Pembesaran (Scale)</div>
       <div class="pill-group" id="scalePills">
         <div class="pill" data-scale="2">2x</div>
         <div class="pill active" data-scale="4">4x</div>
@@ -85,18 +85,23 @@
 
     <div class="control-group">
       <div class="control-label">
-        <span>3. Ketajaman Tepi & Huruf (Edge Steepening)</span>
-        <span id="sharpVal">75%</span>
+        <span>4. Ketajaman Halus (High-Pass Clarity)</span>
+        <span id="sharpVal">45%</span>
       </div>
-      <input type="range" id="sharpRange" min="0" max="100" value="75" />
+      <input type="range" id="sharpRange" min="0" max="100" value="45" />
     </div>
 
     <div class="control-group">
       <div class="control-label">
-        <span>4. Tekstur Alami Kulit / Film Grain</span>
-        <span id="grainVal">30%</span>
+        <span>5. Pori Kulit & Film Grain Kamera</span>
+        <span id="grainVal">40%</span>
       </div>
-      <input type="range" id="grainRange" min="0" max="100" value="30" />
+      <input type="range" id="grainRange" min="0" max="100" value="40" />
+    </div>
+
+    <div class="toggle-row">
+      <span>Jaga Warna Asli (Original Color Lock)</span>
+      <input type="checkbox" id="chkColorLock" checked />
     </div>
 
     <div class="toggle-row">
@@ -104,13 +109,8 @@
       <input type="checkbox" id="chk300Dpi" checked />
     </div>
 
-    <div class="toggle-row">
-      <span>Kontras Cetak & Warna Alami</span>
-      <input type="checkbox" id="chkNaturalTone" checked />
-    </div>
-
     <div class="control-group">
-      <div class="control-label">5. Format Ekspor Hasil</div>
+      <div class="control-label">6. Format Ekspor Hasil</div>
       <select id="exportFormat">
         <option value="image/png">PNG Lossless 300 DPI (Terbaik untuk Cetak)</option>
         <option value="image/jpeg">JPG Ultra 96% 300 DPI (Ukuran Ringkas)</option>
@@ -150,8 +150,8 @@
 
     <div class="viewer-container" id="viewerArea">
       <div class="dropzone" id="dropzone">
-        <h2>Seret & Lepas Gambar atau Desain Banner ke Sini</h2>
-        <p>Gunakan <b>AI Swin2SR</b> untuk foto wajah/produk buram, atau pilih <b>Vector-Edge De-Blur</b> untuk memperbesar banner dan tulisan cetak agar tajam tanpa merubah bentuk huruf.</p>
+        <h2>Seret & Lepas Foto atau Desain Banner ke Sini</h2>
+        <p>Menggunakan <b>AI Swin2SR Photoreal + Micro-Pore Synthesis</b> untuk hasil foto wajah sealami kamera DSLR, serta <b>Vector-Edge De-Blur</b> agar huruf pada banner cetak tajam tanpa berubah bentuk.</p>
         <span class="btn btn-primary">Jelajahi File Perangkat</span>
       </div>
 
@@ -189,7 +189,7 @@
       <button class="btn" id="btnCloseModal" style="padding:0.25rem 0.6rem;">✕</button>
     </div>
     <p style="font-size:0.83rem; color:var(--text-muted); line-height:1.45;">
-      Mode <b>AI Swin2SR</b> dan <b>Vector-Edge De-Blur</b> sudah aktif 100% gratis tanpa API Key. Kolom ini hanya diperlukan jika Anda ingin menggunakan mode <b>Cloud GPU Generative</b> dengan token Replicate pribadi.
+      Mode <b>AI Swin2SR Photoreal</b> dan <b>Vector-Edge De-Blur</b> sudah aktif 100% gratis tanpa API Key. Kolom ini hanya diperlukan jika Anda ingin menggunakan mode <b>Cloud GPU Generative</b> dengan token Replicate pribadi.
     </p>
     <div class="control-group">
       <label class="control-label">Replicate API Token</label>
