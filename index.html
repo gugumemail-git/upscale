@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UltraScale AI Studio — Natural Realism + 300 DPI</title>
+  <title>UltraScale AI Studio Pro — Print Banner & Photo Super Resolution</title>
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#2563eb" />
 
@@ -46,7 +46,7 @@
     header {
       background: var(--bg-panel);
       border-bottom: 1px solid var(--border);
-      padding: 0.85rem 1.5rem;
+      padding: 0.8rem 1.5rem;
       display: flex;
       justify-content: space-between;
       align-items: center;
@@ -71,20 +71,21 @@
       border: 1px solid var(--border);
       background: var(--bg-panel);
       color: var(--text-main);
-      padding: 0.5rem 0.9rem;
+      padding: 0.48rem 0.85rem;
       border-radius: 8px;
-      font-size: 0.85rem;
+      font-size: 0.83rem;
       font-weight: 600;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      gap: 0.45rem;
+      gap: 0.4rem;
       transition: all 0.15s;
       white-space: nowrap;
+      user-select: none;
     }
     .btn:hover:not(:disabled) { background: var(--bg-subtle); }
-    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .btn:disabled { opacity: 0.45; cursor: not-allowed; }
     .btn-primary { background: var(--primary); color: #fff; border-color: var(--primary); }
     .btn-primary:hover:not(:disabled) { background: var(--primary-hover); }
 
@@ -104,9 +105,9 @@
 
     .workspace {
       display: grid;
-      grid-template-columns: 365px 1fr;
+      grid-template-columns: 375px 1fr;
       flex: 1;
-      min-height: calc(100vh - 60px);
+      min-height: calc(100vh - 58px);
     }
     @media (max-width: 960px) {
       .workspace { grid-template-columns: 1fr; }
@@ -115,12 +116,12 @@
     .sidebar {
       background: var(--bg-panel);
       border-right: 1px solid var(--border);
-      padding: 1.2rem;
+      padding: 1.15rem;
       display: flex;
       flex-direction: column;
-      gap: 1rem;
+      gap: 0.95rem;
       overflow-y: auto;
-      max-height: calc(100vh - 60px);
+      max-height: calc(100vh - 58px);
     }
     @media (max-width: 960px) {
       .sidebar { max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
@@ -128,7 +129,7 @@
 
     .control-group { display: flex; flex-direction: column; gap: 0.4rem; }
     .control-label {
-      font-size: 0.75rem;
+      font-size: 0.74rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.04em;
@@ -138,11 +139,40 @@
       align-items: center;
     }
 
-    .engine-list { display: flex; flex-direction: column; gap: 0.45rem; }
+    /* Preset Grid */
+    .preset-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.4rem;
+    }
+    .preset-btn {
+      padding: 0.45rem 0.55rem;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg-subtle);
+      color: var(--text-main);
+      font-size: 0.78rem;
+      font-weight: 700;
+      cursor: pointer;
+      text-align: left;
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      transition: all 0.15s;
+    }
+    .preset-btn:hover { border-color: var(--primary); }
+    .preset-btn.active {
+      background: rgba(37, 99, 235, 0.12);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+
+    /* Engine Cards */
+    .engine-list { display: flex; flex-direction: column; gap: 0.42rem; }
     .engine-card {
       border: 2px solid var(--border);
       border-radius: 10px;
-      padding: 0.6rem 0.75rem;
+      padding: 0.55rem 0.7rem;
       cursor: pointer;
       background: var(--bg-subtle);
       transition: all 0.15s;
@@ -155,12 +185,12 @@
       border-color: var(--primary);
       background: rgba(37, 99, 235, 0.08);
     }
-    .engine-title { font-size: 0.83rem; font-weight: 700; display: flex; align-items: center; gap: 0.35rem; }
-    .engine-desc { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.15rem; line-height: 1.3; }
+    .engine-title { font-size: 0.82rem; font-weight: 700; display: flex; align-items: center; gap: 0.35rem; }
+    .engine-desc { font-size: 0.71rem; color: var(--text-muted); margin-top: 0.15rem; line-height: 1.3; }
     .tag-free {
       background: rgba(5, 150, 105, 0.15);
       color: var(--success);
-      font-size: 0.65rem;
+      font-size: 0.64rem;
       font-weight: 800;
       padding: 0.15rem 0.45rem;
       border-radius: 6px;
@@ -169,7 +199,7 @@
     .tag-pro {
       background: rgba(124, 58, 237, 0.15);
       color: var(--accent);
-      font-size: 0.65rem;
+      font-size: 0.64rem;
       font-weight: 800;
       padding: 0.15rem 0.45rem;
       border-radius: 6px;
@@ -178,7 +208,7 @@
 
     .pill-group { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.4rem; }
     .pill {
-      padding: 0.45rem;
+      padding: 0.42rem;
       text-align: center;
       border: 1px solid var(--border);
       border-radius: 7px;
@@ -191,12 +221,12 @@
 
     select, input[type="range"], input[type="password"] {
       width: 100%;
-      padding: 0.5rem 0.65rem;
+      padding: 0.48rem 0.65rem;
       border-radius: 8px;
       border: 1px solid var(--border);
       background: var(--bg-subtle);
       color: var(--text-main);
-      font-size: 0.84rem;
+      font-size: 0.83rem;
     }
     input[type="range"] { padding: 0; accent-color: var(--primary); cursor: pointer; }
 
@@ -204,10 +234,10 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 0.45rem 0.65rem;
+      padding: 0.42rem 0.65rem;
       background: var(--bg-subtle);
       border-radius: 8px;
-      font-size: 0.82rem;
+      font-size: 0.81rem;
       font-weight: 600;
     }
 
@@ -215,20 +245,20 @@
       background: var(--bg-subtle);
       border: 1px solid var(--border);
       border-radius: 10px;
-      padding: 0.75rem;
-      font-size: 0.78rem;
+      padding: 0.7rem;
+      font-size: 0.76rem;
       display: flex;
       flex-direction: column;
-      gap: 0.35rem;
+      gap: 0.32rem;
     }
-    .spec-row { display: flex; justify-content: space-between; }
-    .spec-val { font-weight: 700; color: var(--text-main); }
+    .spec-row { display: flex; justify-content: space-between; gap: 0.5rem; }
+    .spec-val { font-weight: 700; color: var(--text-main); text-align: right; }
 
     .stage {
       display: flex;
       flex-direction: column;
-      padding: 1.25rem;
-      gap: 1rem;
+      padding: 1.15rem;
+      gap: 0.9rem;
       position: relative;
       overflow: hidden;
     }
@@ -238,9 +268,9 @@
       flex-wrap: wrap;
       justify-content: space-between;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.6rem;
       background: var(--bg-panel);
-      padding: 0.65rem 1rem;
+      padding: 0.6rem 0.9rem;
       border-radius: 10px;
       border: 1px solid var(--border);
     }
@@ -268,7 +298,7 @@
     .dropzone {
       text-align: center;
       padding: 2.5rem;
-      max-width: 460px;
+      max-width: 480px;
       background: var(--bg-panel);
       border: 2px dashed var(--primary);
       border-radius: 16px;
@@ -276,7 +306,7 @@
       cursor: pointer;
     }
     .dropzone h2 { font-size: 1.15rem; margin-bottom: 0.5rem; }
-    .dropzone p { font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.45; }
+    .dropzone p { font-size: 0.84rem; color: var(--text-muted); margin-bottom: 1rem; line-height: 1.45; }
 
     .compare-wrapper {
       position: relative;
@@ -357,8 +387,8 @@
       border-radius: 10px;
     }
     .batch-item {
-      min-width: 74px;
-      height: 74px;
+      min-width: 72px;
+      height: 72px;
       border-radius: 8px;
       border: 2px solid var(--border);
       overflow: hidden;
@@ -383,7 +413,7 @@
     .loader-overlay {
       position: absolute;
       inset: 0;
-      background: rgba(15, 23, 42, 0.85);
+      background: rgba(15, 23, 42, 0.86);
       backdrop-filter: blur(6px);
       display: none;
       flex-direction: column;
@@ -448,7 +478,7 @@
 <header>
   <div class="brand">
     <span>UltraScale AI</span>
-    <span class="brand-badge">Natural Realism + 300 DPI</span>
+    <span class="brand-badge">Pro Print & Photo 5.0</span>
   </div>
   <div class="header-actions">
     <button class="btn" id="btnOpenSettings" title="Pengaturan Cloud API Opsional">🔑 API Cloud</button>
@@ -459,26 +489,38 @@
 <div class="workspace">
   <!-- PANEL KONTROL KIRI -->
   <aside class="sidebar">
+    <!-- PRESET CERDAS -->
     <div class="control-group">
-      <div class="control-label">1. Pilih Mesin Pemroses AI</div>
+      <div class="control-label">Preset Otomatis (1-Klik)</div>
+      <div class="preset-grid">
+        <button class="preset-btn active" data-preset="portrait">👤 Foto Wajah</button>
+        <button class="preset-btn" data-preset="banner">🪧 Banner & Tulisan</button>
+        <button class="preset-btn" data-preset="product">📦 Foto Produk</button>
+        <button class="preset-btn" data-preset="logo">🎨 Logo & Grafis</button>
+      </div>
+    </div>
+
+    <!-- MESIN PEMROSES -->
+    <div class="control-group">
+      <div class="control-label">1. Arsitektur Mesin Pemroses</div>
       <div class="engine-list">
-        <div class="engine-card active" data-engine="swin2sr_ai">
+        <div class="engine-card active" data-engine="swin2sr_ai" id="cardSwin">
           <div>
             <div class="engine-title">🤖 AI Swin2SR + Natural Realism</div>
-            <div class="engine-desc">Rekonstruksi saraf wajah/rambut + tekstur mikro alami agar tidak seperti lukisan.</div>
+            <div class="engine-desc">Deep Learning rekonstruksi wajah, rambut & tekstur foto buram.</div>
           </div>
-          <span class="tag-free">100% GRATIS</span>
+          <span class="tag-free">AI GRATIS</span>
         </div>
 
-        <div class="engine-card" data-engine="fast_local">
+        <div class="engine-card" data-engine="vector_edge" id="cardVector">
           <div>
-            <div class="engine-title">⚡ AMD CAS Adaptive Sharpen</div>
-            <div class="engine-desc">Penajaman tepi lintas blok instan (< 0.5 detik) untuk desain & foto cepat.</div>
+            <div class="engine-title">🪧 Vector-Edge De-Blur (Banner/Teks)</div>
+            <div class="engine-desc">Memadatkan tepi huruf & desain cetak agar tajam tanpa mengubah bentuk tulisan.</div>
           </div>
           <span class="tag-free">INSTAN</span>
         </div>
 
-        <div class="engine-card" data-engine="cloud">
+        <div class="engine-card" data-engine="cloud" id="cardCloud">
           <div>
             <div class="engine-title">🧠 Cloud GPU Generative</div>
             <div class="engine-desc">Server NVIDIA A100 (Memerlukan API Key Replicate).</div>
@@ -508,7 +550,7 @@
 
     <div class="control-group">
       <div class="control-label">
-        <span>3. Ketajaman Detail (Multi-Radius)</span>
+        <span>3. Ketajaman Tepi & Huruf (Edge Steepening)</span>
         <span id="sharpVal">75%</span>
       </div>
       <input type="range" id="sharpRange" min="0" max="100" value="75" />
@@ -517,9 +559,9 @@
     <div class="control-group">
       <div class="control-label">
         <span>4. Tekstur Alami Kulit / Film Grain</span>
-        <span id="grainVal">35%</span>
+        <span id="grainVal">30%</span>
       </div>
-      <input type="range" id="grainRange" min="0" max="100" value="35" />
+      <input type="range" id="grainRange" min="0" max="100" value="30" />
     </div>
 
     <div class="toggle-row">
@@ -528,7 +570,7 @@
     </div>
 
     <div class="toggle-row">
-      <span>Natural Tone & Warna Asli</span>
+      <span>Kontras Cetak & Warna Alami</span>
       <input type="checkbox" id="chkNaturalTone" checked />
     </div>
 
@@ -542,37 +584,39 @@
     </div>
 
     <button class="btn btn-ai" id="btnProcess" disabled style="padding: 0.8rem; font-size: 0.92rem;">
-      ✨ Proses Upscale AI Sekarang
+      ✨ Proses Upscale Sekarang
     </button>
 
     <!-- KALKULATOR CETAK & RESOLUSI -->
     <div class="spec-box">
-      <div class="control-label" style="margin-bottom:0.2rem;">Kalkulator Resolusi & Cetak</div>
+      <div class="control-label" style="margin-bottom:0.2rem;">Kalkulator Ukuran Cetak Fisik</div>
       <div class="spec-row"><span>Resolusi Awal:</span><span class="spec-val" id="infoOrigRes">-</span></div>
       <div class="spec-row"><span>Target Output:</span><span class="spec-val" id="infoTargetRes" style="color:var(--primary);">-</span></div>
-      <div class="spec-row"><span>Cetak Foto (300 DPI):</span><span class="spec-val" id="infoPrintPhoto">-</span></div>
-      <div class="spec-row"><span>Cetak Banner (150 DPI):</span><span class="spec-val" id="infoPrintBanner">-</span></div>
+      <div class="spec-row"><span>Foto / Brosur (300 DPI):</span><span class="spec-val" id="infoPrintPhoto">-</span></div>
+      <div class="spec-row"><span>X-Banner Indoor (150 DPI):</span><span class="spec-val" id="infoPrintBanner">-</span></div>
+      <div class="spec-row"><span>Spanduk / Baliho (72 DPI):</span><span class="spec-val" id="infoPrintOutdoor">-</span></div>
     </div>
   </aside>
 
   <!-- AREA KANVAS UTAMA -->
   <main class="stage">
     <div class="toolbar">
-      <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-        <button class="btn btn-primary" id="btnUploadTrigger">📁 Pilih / Tambah Gambar</button>
-        <button class="btn" id="btnProcessAll" disabled>⚡ Proses Semua Antrean</button>
+      <div style="display:flex; gap:0.45rem; flex-wrap:wrap;">
+        <button class="btn btn-primary" id="btnUploadTrigger">📁 Pilih Gambar</button>
+        <button class="btn" id="btnProcessAll" disabled>⚡ Proses Semua</button>
         <input type="file" id="fileInput" accept="image/*" multiple hidden />
       </div>
-      <div style="display:flex; gap:0.5rem; flex-wrap:wrap;">
-        <button class="btn" id="btnZoomToggle" disabled>🔍 Zoom 100% Asli</button>
-        <button class="btn btn-success" id="btnDownload" disabled>⬇️ Unduh Hasil (300 DPI)</button>
+      <div style="display:flex; gap:0.45rem; flex-wrap:wrap;">
+        <button class="btn" id="btnHoldCompare" disabled>👁️ Tahan: Lihat Asli</button>
+        <button class="btn" id="btnZoomToggle" disabled>🔍 Zoom 100%</button>
+        <button class="btn btn-success" id="btnDownload" disabled>⬇️ Unduh (300 DPI)</button>
       </div>
     </div>
 
     <div class="viewer-container" id="viewerArea">
       <div class="dropzone" id="dropzone">
-        <h2>Seret & Lepas Gambar ke Sini</h2>
-        <p>Menggunakan <b>AI Swin2SR + Natural Realism</b> untuk merekonstruksi detail wajah dengan tekstur mikro alami seperti foto kamera asli, siap cetak <b>300 DPI</b>.</p>
+        <h2>Seret & Lepas Gambar atau Desain Banner ke Sini</h2>
+        <p>Gunakan <b>AI Swin2SR</b> untuk foto wajah/produk buram, atau pilih <b>Vector-Edge De-Blur</b> untuk memperbesar banner dan tulisan cetak agar tajam tanpa merubah bentuk huruf.</p>
         <span class="btn btn-primary">Jelajahi File Perangkat</span>
       </div>
 
@@ -590,7 +634,7 @@
 
       <div class="loader-overlay" id="loaderOverlay">
         <div class="spinner"></div>
-        <h3 id="loaderTitle">Memuat Model AI Swin2SR...</h3>
+        <h3 id="loaderTitle">Memproses Gambar...</h3>
         <p id="loaderSub" style="font-size:0.85rem; opacity:0.9; margin-top:0.35rem; max-width:340px;">Mohon tunggu sebentar</p>
         <div class="progress-track" id="progressTrack">
           <div class="progress-fill" id="progressFill"></div>
@@ -610,7 +654,7 @@
       <button class="btn" id="btnCloseModal" style="padding:0.25rem 0.6rem;">✕</button>
     </div>
     <p style="font-size:0.83rem; color:var(--text-muted); line-height:1.45;">
-      Mesin <b>AI Swin2SR + Natural Realism</b> sudah aktif 100% gratis tanpa API Key. Kolom di bawah ini hanya diperlukan jika Anda ingin menggunakan mode <b>Cloud GPU Generative</b> dengan kunci Replicate milik sendiri.
+      Mode <b>AI Swin2SR</b> dan <b>Vector-Edge De-Blur</b> sudah aktif 100% gratis tanpa API Key. Kolom ini hanya diperlukan jika Anda ingin menggunakan mode <b>Cloud GPU Generative</b> dengan token Replicate pribadi.
     </p>
     <div class="control-group">
       <label class="control-label">Replicate API Token</label>
@@ -635,7 +679,7 @@
     engine: 'swin2sr_ai',
     scale: 4,
     sharpness: 75,
-    grain: 35,
+    grain: 30,
     inject300Dpi: true,
     naturalTone: true,
     items: [],
@@ -677,14 +721,45 @@
     $('inputApiKey').value = '';
   });
 
-  // Pilihan Engine
-  document.querySelectorAll('.engine-card').forEach(card => {
-    card.addEventListener('click', () => {
-      document.querySelectorAll('.engine-card').forEach(c => c.classList.remove('active'));
-      card.classList.add('active');
-      state.engine = card.dataset.engine;
-      $('cloudModelGroup').style.display = state.engine === 'cloud' ? 'flex' : 'none';
+  // Preset Cerdas 1-Klik
+  const presets = {
+    portrait: { engine: 'swin2sr_ai', sharpness: 75, grain: 30, tone: true },
+    banner:   { engine: 'vector_edge', sharpness: 90, grain: 0, tone: true },
+    product:  { engine: 'swin2sr_ai', sharpness: 85, grain: 10, tone: true },
+    logo:     { engine: 'vector_edge', sharpness: 95, grain: 0, tone: false }
+  };
+
+  document.querySelectorAll('.preset-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      document.querySelectorAll('.preset-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      const p = presets[btn.dataset.preset];
+      if (!p) return;
+
+      setEngine(p.engine);
+      state.sharpness = p.sharpness;
+      $('sharpRange').value = p.sharpness;
+      $('sharpVal').textContent = p.sharpness + '%';
+
+      state.grain = p.grain;
+      $('grainRange').value = p.grain;
+      $('grainVal').textContent = p.grain + '%';
+
+      state.naturalTone = p.tone;
+      $('chkNaturalTone').checked = p.tone;
     });
+  });
+
+  function setEngine(eng) {
+    state.engine = eng;
+    document.querySelectorAll('.engine-card').forEach(c => {
+      c.classList.toggle('active', c.dataset.engine === eng);
+    });
+    $('cloudModelGroup').style.display = eng === 'cloud' ? 'flex' : 'none';
+  }
+
+  document.querySelectorAll('.engine-card').forEach(card => {
+    card.addEventListener('click', () => setEngine(card.dataset.engine));
   });
 
   // Pilihan Skala
@@ -794,6 +869,7 @@
     imgAfter.src = item.outUrl || item.origUrl;
     $('badgeAfterLabel').textContent = item.outUrl ? `SESUDAH (${state.scale}x)` : 'PRATINJAU ASLI';
     $('btnDownload').disabled = !item.outUrl;
+    $('btnHoldCompare').disabled = !item.outUrl;
     $('btnZoomToggle').disabled = false;
 
     setTimeout(syncComparisonDimensions, 50);
@@ -809,16 +885,23 @@
     $('infoOrigRes').textContent = `${formatNum(item.origW)} × ${formatNum(item.origH)} px`;
     $('infoTargetRes').textContent = `${formatNum(tW)} × ${formatNum(tH)} px`;
 
-    const photoW = (tW / 118.11).toFixed(1).replace('.', ',');
-    const photoH = (tH / 118.11).toFixed(1).replace('.', ',');
-    $('infoPrintPhoto').textContent = `${photoW} × ${photoH} cm`;
+    // 300 DPI (118.11 px/cm)
+    const pW = (tW / 118.11).toFixed(1).replace('.', ',');
+    const pH = (tH / 118.11).toFixed(1).replace('.', ',');
+    $('infoPrintPhoto').textContent = `${pW} × ${pH} cm`;
 
-    const banW = (tW / 59.05).toFixed(1).replace('.', ',');
-    const banH = (tH / 59.05).toFixed(1).replace('.', ',');
-    $('infoPrintBanner').textContent = `${banW} × ${banH} cm`;
+    // 150 DPI (59.05 px/cm)
+    const bW = (tW / 59.05).toFixed(1).replace('.', ',');
+    const bH = (tH / 59.05).toFixed(1).replace('.', ',');
+    $('infoPrintBanner').textContent = `${bW} × ${bH} cm`;
+
+    // 72 DPI Outdoor Spanduk/Baliho (28.35 px/cm)
+    const oW = (tW / 2835).toFixed(2).replace('.', ',');
+    const oH = (tH / 2835).toFixed(2).replace('.', ',');
+    $('infoPrintOutdoor').textContent = `${oW} × ${oH} m`;
   }
 
-  // Split Slider
+  // Split Slider & Hold-to-Compare
   function syncComparisonDimensions() {
     if (imgAfter.clientWidth > 0) {
       imgBefore.style.width = imgAfter.clientWidth + 'px';
@@ -826,6 +909,24 @@
     }
   }
   window.addEventListener('resize', syncComparisonDimensions);
+
+  let savedSliderPct = 50;
+  const holdBtn = $('btnHoldCompare');
+  function showOriginalFull() {
+    if (holdBtn.disabled) return;
+    savedSliderPct = parseFloat(beforeLayer.style.width) || 50;
+    beforeLayer.style.width = '100%';
+    sliderHandle.style.left = '100%';
+  }
+  function restoreSlider() {
+    if (holdBtn.disabled) return;
+    beforeLayer.style.width = savedSliderPct + '%';
+    sliderHandle.style.left = savedSliderPct + '%';
+  }
+  holdBtn.addEventListener('mousedown', showOriginalFull);
+  holdBtn.addEventListener('touchstart', showOriginalFull);
+  window.addEventListener('mouseup', restoreSlider);
+  window.addEventListener('touchend', restoreSlider);
 
   let isDragging = false;
   sliderHandle.addEventListener('mousedown', () => isDragging = true);
@@ -852,12 +953,12 @@
       imgAfter.style.maxWidth = 'none';
       compareWrapper.style.maxHeight = '70vh';
       compareWrapper.style.overflow = 'auto';
-      $('btnZoomToggle').textContent = '🔎 Fit ke Layar';
+      $('btnZoomToggle').textContent = '🔎 Fit Layar';
     } else {
       imgAfter.style.maxHeight = '70vh';
       imgAfter.style.maxWidth = '100%';
       compareWrapper.style.overflow = 'hidden';
-      $('btnZoomToggle').textContent = '🔍 Zoom 100% Asli';
+      $('btnZoomToggle').textContent = '🔍 Zoom 100%';
     }
     setTimeout(syncComparisonDimensions, 50);
   });
@@ -926,27 +1027,36 @@
   }
 
   // =========================================================================
-  // MESIN 1: AI SWIN2SR + NATURAL REALISM POST-PROCESSOR
+  // MESIN 1: AI SWIN2SR (WEBGPU / WASM) + NATURAL REALISM
   // =========================================================================
   async function getSwin2SrPipeline() {
     if (state.aiPipeline) return state.aiPipeline;
 
-    $('loaderTitle').textContent = 'Mengunduh Model AI Swin2SR...';
-    $('loaderSub').textContent = 'Hanya dilakukan sekali (tersimpan otomatis di cache browser)';
+    $('loaderTitle').textContent = 'Menyiapkan Jaringan Saraf AI Swin2SR...';
+    $('loaderSub').textContent = 'Mengunduh model sekali (tersimpan otomatis di cache browser)';
 
-    state.aiPipeline = await pipeline(
-      'image-to-image',
-      'Xenova/swin2SR-realworld-sr-x4-64-bsrgan-psnr',
-      {
-        progress_callback: (info) => {
-          if (info.status === 'progress' && info.progress) {
-            const pct = Math.round(info.progress);
-            $('progressFill').style.width = pct + '%';
-            $('loaderSub').textContent = `Mengunduh Bobot AI: ${pct}%`;
-          }
-        }
+    const progressCb = (info) => {
+      if (info.status === 'progress' && info.progress) {
+        const pct = Math.round(info.progress);
+        $('progressFill').style.width = pct + '%';
+        $('loaderSub').textContent = `Mengunduh Bobot AI: ${pct}%`;
       }
-    );
+    };
+
+    try {
+      // Coba akselerasi WebGPU terlebih dahulu agar 4x lebih cepat
+      state.aiPipeline = await pipeline(
+        'image-to-image',
+        'Xenova/swin2SR-realworld-sr-x4-64-bsrgan-psnr',
+        { device: 'webgpu', progress_callback: progressCb }
+      );
+    } catch (_) {
+      state.aiPipeline = await pipeline(
+        'image-to-image',
+        'Xenova/swin2SR-realworld-sr-x4-64-bsrgan-psnr',
+        { progress_callback: progressCb }
+      );
+    }
     return state.aiPipeline;
   }
 
@@ -954,19 +1064,19 @@
     const totalPixels = item.origW * item.origH;
     const { tW, tH } = getSafeTargetDimensions(item.origW, item.origH, state.scale);
 
-    if (totalPixels > 1500000) {
-      $('loaderTitle').textContent = 'File Sudah HD — Menerapkan AMD CAS Sharpen...';
-      $('loaderSub').textContent = 'Mengoptimalkan ketajaman tepi & metadata cetak 300 DPI';
-      return await applyNaturalRealismAndCas(item.origUrl, tW, tH, true);
+    // Jika file sudah berukuran banner besar (> 1.8 MP), arahkan ke Vector-Edge De-Blur agar tulisan aman & browser tidak hang
+    if (totalPixels > 1800000) {
+      $('loaderTitle').textContent = 'File Desain/Banner HD — Mengaktifkan Vector-Edge De-Blur...';
+      $('loaderSub').textContent = 'Menjaga ketajaman huruf & garis cetak 300 DPI';
+      return await applyVectorEdgeAndRealism(item.origUrl, tW, tH, true);
     }
 
     const upscaler = await getSwin2SrPipeline();
 
-    $('loaderTitle').textContent = 'AI Swin2SR Membangun Ulang Struktur Wajah...';
-    $('loaderSub').textContent = 'Tahap 1/2: Rekonstruksi jaringan saraf (10–25 detik)...';
+    $('loaderTitle').textContent = 'AI Swin2SR Merekonstruksi Detail Wajah & Tekstur...';
+    $('loaderSub').textContent = 'Tahap 1/2: Deep Learning Super-Resolution berjalan...';
     $('progressFill').style.width = '75%';
-
-    await new Promise(r => setTimeout(r, 50));
+    await new Promise(r => setTimeout(r, 40));
 
     const rawOutput = await upscaler(item.origUrl);
     const aiCanvas = rawOutput.toCanvas();
@@ -976,19 +1086,18 @@
     stdCanvas.getContext('2d').drawImage(aiCanvas, 0, 0);
     const aiDataUrl = stdCanvas.toDataURL('image/png');
 
-    $('loaderTitle').textContent = 'Menerapkan Natural Skin Texture & Micro-Detail...';
-    $('loaderSub').textContent = 'Tahap 2/2: Menghilangkan efek licin & injeksi 300 DPI...';
+    $('loaderTitle').textContent = 'Menyuntikkan Ketajaman Mikro & Natural Skin Texture...';
+    $('loaderSub').textContent = 'Tahap 2/2: Finalisasi realisme fotografi & 300 DPI...';
     $('progressFill').style.width = '100%';
     await new Promise(r => setTimeout(r, 30));
 
-    // isCasMode = false karena AI sudah membangun ulang struktur piksel, kita tinggal menyuntikkan micro-detail & natural grain
-    return await applyNaturalRealismAndCas(aiDataUrl, tW, tH, false);
+    return await applyVectorEdgeAndRealism(aiDataUrl, tW, tH, false);
   }
 
   // =========================================================================
-  // MESIN 2: MULTI-RADIUS UNSHARP MASK, AMD CAS & NATURAL MICRO-GRAIN
+  // MESIN 2: VECTOR-EDGE DE-BLUR (SIGMOIDAL SHOCK FILTER UNTUK TULISAN & BANNER)
   // =========================================================================
-  async function applyNaturalRealismAndCas(sourceUrl, targetW, targetH, isInstantCasMode) {
+  async function applyVectorEdgeAndRealism(sourceUrl, targetW, targetH, isVectorBannerMode) {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -1000,10 +1109,10 @@
         let curW = img.width;
         let curH = img.height;
 
-        // Progressive Lanczos-style Multi-Step Resize jika ukuran belum sesuai target
+        // Multi-Step Bicubic/Lanczos Scaling
         while (curW < targetW) {
-          const nextW = Math.min(targetW, Math.round(curW * 1.4));
-          const nextH = Math.min(targetH, Math.round(curH * 1.4));
+          const nextW = Math.min(targetW, Math.round(curW * 1.45));
+          const nextH = Math.min(targetH, Math.round(curH * 1.45));
           const stepCanvas = document.createElement('canvas');
           stepCanvas.width = nextW;
           stepCanvas.height = nextH;
@@ -1032,20 +1141,23 @@
         const data = imgData.data;
         const copy = new Uint8ClampedArray(data);
 
-        // Radius otomatis menyesuaikan skala pembesaran agar lintas blok piksel!
-        const radius = isInstantCasMode
-          ? Math.max(2, Math.round(state.scale * 0.75))
+        // Radius pemindaian tepi menyesuaikan skala pembesaran agar menangkap seluruh area buram huruf
+        const radius = isVectorBannerMode
+          ? Math.max(2, Math.min(6, state.scale))
           : 2;
 
-        // Kekuatan penajaman
-        const sharpGain = isInstantCasMode
-          ? (state.sharpness / 100) * 1.85
-          : (state.sharpness / 100) * 0.95;
+        // Kekuatan Sigmoidal Edge-Steepening (memadatkan tepi buram menjadi garis tajam tanpa merubah huruf)
+        const sharpNorm = state.sharpness / 100;
+        const steepPower = isVectorBannerMode
+          ? 1.0 + sharpNorm * 3.2   // Sangat tegas untuk tulisan & desain cetak
+          : 1.0 + sharpNorm * 1.1;  // Halus & presisi untuk mata/rambut hasil AI
 
-        // Tekstur mikro sensor kamera (menghilangkan efek plastik/lukisan pada kulit wajah)
+        const detailBoost = isVectorBannerMode
+          ? sharpNorm * 0.55
+          : sharpNorm * 0.75;
+
         const grainStrength = (state.grain / 100) * 7.5;
 
-        // Pseudo-random cepat deterministik untuk natural film/sensor grain
         let seed = 1337;
         function fastRand() {
           seed = (seed * 16807) % 2147483647;
@@ -1060,7 +1172,7 @@
             for (let c = 0; c < 3; c++) {
               const center = copy[idx + c];
 
-              // Sampel 8 arah pada jarak radius (menangkap tepi mata, rambut, janggut)
+              // Sampel 8 titik di sekeliling piksel pada jarak radius
               const n = copy[((y - radius) * targetW + x) * 4 + c];
               const s = copy[((y + radius) * targetW + x) * 4 + c];
               const w = copy[(y * targetW + (x - radius)) * 4 + c];
@@ -1070,31 +1182,33 @@
               const sw = copy[((y + radius) * targetW + (x - radius)) * 4 + c];
               const se = copy[((y + radius) * targetW + (x + radius)) * 4 + c];
 
-              // AMD Contrast-Adaptive Sharpening (CAS) Weighting
-              const minVal = Math.min(center, n, s, w, e);
-              const maxVal = Math.max(center, n, s, w, e);
-              const localContrast = (maxVal - minVal) / 255;
+              const minVal = Math.min(center, n, s, w, e, nw, ne, sw, se);
+              const maxVal = Math.max(center, n, s, w, e, nw, ne, sw, se);
+              const range = maxVal - minVal;
 
-              // Bobot adaptif: menajamkan detail sedang, melindungi tepi ekstrem dari halo putih
-              const adaptiveWeight = isInstantCasMode
-                ? sharpGain * (1.0 - localContrast * 0.45)
-                : sharpGain * (0.65 + localContrast * 0.35);
+              let val = center;
 
+              // Hanya terapkan Sigmoidal Steepening pada area tepi (range >= 14), bidang polos tetap bersih!
+              if (range >= 14 && sharpNorm > 0) {
+                const t = (center - minVal) / range;
+                const steepT = t < 0.5
+                  ? 0.5 * Math.pow(2 * t, steepPower)
+                  : 1.0 - 0.5 * Math.pow(2 * (1 - t), steepPower);
+                val = minVal + steepT * range;
+              }
+
+              // Tambahkan Unsharp Detail Lintas Blok
               const localAvg = (n + s + w + e) * 0.15 + (nw + ne + sw + se) * 0.10;
-              const detail = center - localAvg;
+              val += (center - localAvg) * detailBoost;
 
-              let val = center + detail * adaptiveWeight;
-
-              // Natural S-Curve Micro-Contrast (menjaga warna kulit tetap alami, tidak oranye)
+              // Kontras Cetak & Warna Alami
               if (state.naturalTone) {
-                const norm = val / 255;
-                const sCurve = norm - 0.035 * Math.sin(2 * Math.PI * norm);
+                const norm = Math.max(0, Math.min(1, val / 255));
+                const sCurve = norm - 0.03 * Math.sin(2 * Math.PI * norm);
                 val = sCurve * 255;
               }
 
-              // Tambahkan natural luminance micro-grain (lebih terasa pada midtone seperti kulit)
               val += noise;
-
               data[idx + c] = Math.max(0, Math.min(255, val));
             }
           }
@@ -1150,11 +1264,11 @@
 
       if (state.engine === 'swin2sr_ai') {
         outputUrl = await processSwin2SrUpscale(item);
-      } else if (state.engine === 'fast_local') {
-        $('loaderTitle').textContent = 'Memproses AMD CAS Adaptive Sharpen...';
-        $('loaderSub').textContent = `Menajamkan detail lintas blok (${state.scale}x) + 300 DPI`;
+      } else if (state.engine === 'vector_edge') {
+        $('loaderTitle').textContent = 'Memproses Vector-Edge De-Blur...';
+        $('loaderSub').textContent = `Memadatkan ketajaman tulisan & desain (${state.scale}x) + 300 DPI`;
         await new Promise(r => setTimeout(r, 30));
-        outputUrl = await applyNaturalRealismAndCas(item.origUrl, tW, tH, true);
+        outputUrl = await applyVectorEdgeAndRealism(item.origUrl, tW, tH, true);
       } else {
         $('loaderTitle').textContent = 'Menjalankan Cloud GPU AI...';
         $('loaderSub').textContent = `Memproses ${item.name} di server GPU`;
@@ -1165,7 +1279,7 @@
       item.status = `${state.scale}x ✓`;
       selectItem(idx);
     } catch (err) {
-      alert('Kendala Pemrosesan AI: ' + err.message);
+      alert('Kendala Pemrosesan: ' + err.message);
       item.status = 'Gagal';
       renderBatchStrip();
     } finally {
