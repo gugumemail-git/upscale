@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>UltraScale AI Studio — Swin2SR Real-World Super Resolution</title>
+  <title>UltraScale AI Studio — Natural Realism + 300 DPI</title>
   <link rel="manifest" href="manifest.json" />
   <meta name="theme-color" content="#2563eb" />
 
@@ -19,8 +19,6 @@
       --primary-hover: #1d4ed8;
       --accent: #7c3aed;
       --success: #059669;
-      --warning: #d97706;
-      --danger: #dc2626;
       --shadow: 0 4px 20px -2px rgba(15, 23, 42, 0.08);
       --checker-1: #e2e8f0;
       --checker-2: #ffffff;
@@ -37,8 +35,6 @@
       --primary-hover: #2563eb;
       --accent: #8b5cf6;
       --success: #10b981;
-      --warning: #f59e0b;
-      --danger: #ef4444;
       --shadow: 0 4px 24px -2px rgba(0, 0, 0, 0.5);
       --checker-1: #1e293b;
       --checker-2: #0f172a;
@@ -122,7 +118,7 @@
       padding: 1.2rem;
       display: flex;
       flex-direction: column;
-      gap: 1.05rem;
+      gap: 1rem;
       overflow-y: auto;
       max-height: calc(100vh - 60px);
     }
@@ -130,9 +126,9 @@
       .sidebar { max-height: none; border-right: none; border-bottom: 1px solid var(--border); }
     }
 
-    .control-group { display: flex; flex-direction: column; gap: 0.45rem; }
+    .control-group { display: flex; flex-direction: column; gap: 0.4rem; }
     .control-label {
-      font-size: 0.76rem;
+      font-size: 0.75rem;
       font-weight: 700;
       text-transform: uppercase;
       letter-spacing: 0.04em;
@@ -193,7 +189,7 @@
     }
     .pill.active { background: var(--primary); color: #fff; border-color: var(--primary); }
 
-    select, input[type="range"], input[type="password"], input[type="text"] {
+    select, input[type="range"], input[type="password"] {
       width: 100%;
       padding: 0.5rem 0.65rem;
       border-radius: 8px;
@@ -452,7 +448,7 @@
 <header>
   <div class="brand">
     <span>UltraScale AI</span>
-    <span class="brand-badge">Swin2SR BSRGAN + 300 DPI</span>
+    <span class="brand-badge">Natural Realism + 300 DPI</span>
   </div>
   <div class="header-actions">
     <button class="btn" id="btnOpenSettings" title="Pengaturan Cloud API Opsional">🔑 API Cloud</button>
@@ -468,16 +464,16 @@
       <div class="engine-list">
         <div class="engine-card active" data-engine="swin2sr_ai">
           <div>
-            <div class="engine-title">🤖 AI Swin2SR Real-World 4x</div>
-            <div class="engine-desc">Deep Learning rekonstruksi wajah, rambut & tekstur buram di browser.</div>
+            <div class="engine-title">🤖 AI Swin2SR + Natural Realism</div>
+            <div class="engine-desc">Rekonstruksi saraf wajah/rambut + tekstur mikro alami agar tidak seperti lukisan.</div>
           </div>
           <span class="tag-free">100% GRATIS</span>
         </div>
 
         <div class="engine-card" data-engine="fast_local">
           <div>
-            <div class="engine-title">⚡ Turbo Deconvolution Sharpen</div>
-            <div class="engine-desc">Pemrosesan instan untuk file banner/spanduk berukuran raksasa.</div>
+            <div class="engine-title">⚡ AMD CAS Adaptive Sharpen</div>
+            <div class="engine-desc">Penajaman tepi lintas blok instan (< 0.5 detik) untuk desain & foto cepat.</div>
           </div>
           <span class="tag-free">INSTAN</span>
         </div>
@@ -512,10 +508,18 @@
 
     <div class="control-group">
       <div class="control-label">
-        <span>3. Kekuatan Penajaman Mikro</span>
-        <span id="sharpVal">65%</span>
+        <span>3. Ketajaman Detail (Multi-Radius)</span>
+        <span id="sharpVal">75%</span>
       </div>
-      <input type="range" id="sharpRange" min="0" max="100" value="65" />
+      <input type="range" id="sharpRange" min="0" max="100" value="75" />
+    </div>
+
+    <div class="control-group">
+      <div class="control-label">
+        <span>4. Tekstur Alami Kulit / Film Grain</span>
+        <span id="grainVal">35%</span>
+      </div>
+      <input type="range" id="grainRange" min="0" max="100" value="35" />
     </div>
 
     <div class="toggle-row">
@@ -524,12 +528,12 @@
     </div>
 
     <div class="toggle-row">
-      <span>Auto HDR Tone & Kontras Wajah</span>
-      <input type="checkbox" id="chkHdr" checked />
+      <span>Natural Tone & Warna Asli</span>
+      <input type="checkbox" id="chkNaturalTone" checked />
     </div>
 
     <div class="control-group">
-      <div class="control-label">4. Format Ekspor Hasil</div>
+      <div class="control-label">5. Format Ekspor Hasil</div>
       <select id="exportFormat">
         <option value="image/png">PNG Lossless 300 DPI (Terbaik untuk Cetak)</option>
         <option value="image/jpeg">JPG Ultra 96% 300 DPI (Ukuran Ringkas)</option>
@@ -568,7 +572,7 @@
     <div class="viewer-container" id="viewerArea">
       <div class="dropzone" id="dropzone">
         <h2>Seret & Lepas Gambar ke Sini</h2>
-        <p>Menggunakan model <b>AI Swin2SR Real-World BSRGAN</b> yang berjalan langsung di browser Anda untuk merekonstruksi detail foto buram menjadi tajam dan jernih.</p>
+        <p>Menggunakan <b>AI Swin2SR + Natural Realism</b> untuk merekonstruksi detail wajah dengan tekstur mikro alami seperti foto kamera asli, siap cetak <b>300 DPI</b>.</p>
         <span class="btn btn-primary">Jelajahi File Perangkat</span>
       </div>
 
@@ -594,7 +598,6 @@
       </div>
     </div>
 
-    <!-- ANTREAN BATCH -->
     <div class="batch-strip" id="batchStrip" style="display:none;"></div>
   </main>
 </div>
@@ -607,7 +610,7 @@
       <button class="btn" id="btnCloseModal" style="padding:0.25rem 0.6rem;">✕</button>
     </div>
     <p style="font-size:0.83rem; color:var(--text-muted); line-height:1.45;">
-      Mesin <b>AI Swin2SR Real-World 4x</b> sudah aktif 100% gratis tanpa API Key. Kolom di bawah ini hanya diperlukan jika Anda ingin menggunakan mode <b>Cloud GPU Generative</b> dengan kunci Replicate milik sendiri.
+      Mesin <b>AI Swin2SR + Natural Realism</b> sudah aktif 100% gratis tanpa API Key. Kolom di bawah ini hanya diperlukan jika Anda ingin menggunakan mode <b>Cloud GPU Generative</b> dengan kunci Replicate milik sendiri.
     </p>
     <div class="control-group">
       <label class="control-label">Replicate API Token</label>
@@ -623,18 +626,18 @@
 <script type="module">
   import { pipeline, env } from 'https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.1.2';
 
-  // Konfigurasi agar model diunduh dari Hugging Face CDN dan di-cache di browser
-env.allowLocalModels = false;
-env.useBrowserCache = true;
-env.backends.onnx.wasm.proxy = false;
-env.backends.onnx.wasm.numThreads = 1;
+  env.allowLocalModels = false;
+  env.useBrowserCache = true;
+  env.backends.onnx.wasm.proxy = false;
+  env.backends.onnx.wasm.numThreads = 1;
 
   const state = {
     engine: 'swin2sr_ai',
     scale: 4,
-    sharpness: 65,
+    sharpness: 75,
+    grain: 35,
     inject300Dpi: true,
-    hdr: true,
+    naturalTone: true,
     items: [],
     activeIndex: -1,
     isZoomed: false,
@@ -699,8 +702,12 @@ env.backends.onnx.wasm.numThreads = 1;
     state.sharpness = parseInt(e.target.value, 10);
     $('sharpVal').textContent = state.sharpness + '%';
   });
+  $('grainRange').addEventListener('input', (e) => {
+    state.grain = parseInt(e.target.value, 10);
+    $('grainVal').textContent = state.grain + '%';
+  });
   $('chk300Dpi').addEventListener('change', (e) => state.inject300Dpi = e.target.checked);
-  $('chkHdr').addEventListener('change', (e) => state.hdr = e.target.checked);
+  $('chkNaturalTone').addEventListener('change', (e) => state.naturalTone = e.target.checked);
 
   // Upload & Drag-Drop
   $('btnUploadTrigger').addEventListener('click', () => fileInput.click());
@@ -785,7 +792,7 @@ env.backends.onnx.wasm.numThreads = 1;
     compareWrapper.style.display = 'block';
     imgBefore.src = item.origUrl;
     imgAfter.src = item.outUrl || item.origUrl;
-    $('badgeAfterLabel').textContent = item.outUrl ? `SESUDAH AI (${state.scale}x)` : 'PRATINJAU ASLI';
+    $('badgeAfterLabel').textContent = item.outUrl ? `SESUDAH (${state.scale}x)` : 'PRATINJAU ASLI';
     $('btnDownload').disabled = !item.outUrl;
     $('btnZoomToggle').disabled = false;
 
@@ -919,15 +926,14 @@ env.backends.onnx.wasm.numThreads = 1;
   }
 
   // =========================================================================
-  // MESIN 1: AI SWIN2SR REAL-WORLD BSRGAN (REKONSTRUKSI DETAIL NYATA)
+  // MESIN 1: AI SWIN2SR + NATURAL REALISM POST-PROCESSOR
   // =========================================================================
   async function getSwin2SrPipeline() {
     if (state.aiPipeline) return state.aiPipeline;
 
-    $('loaderTitle').textContent = 'Mengunduh Model AI Swin2SR BSRGAN...';
-    $('loaderSub').textContent = 'Hanya dilakukan sekali (tersimpan otomatis di browser)';
+    $('loaderTitle').textContent = 'Mengunduh Model AI Swin2SR...';
+    $('loaderSub').textContent = 'Hanya dilakukan sekali (tersimpan otomatis di cache browser)';
 
-    // Model BSRGAN 4x khusus memperbaiki gambar buram & kompresi JPG
     state.aiPipeline = await pipeline(
       'image-to-image',
       'Xenova/swin2SR-realworld-sr-x4-64-bsrgan-psnr',
@@ -936,7 +942,7 @@ env.backends.onnx.wasm.numThreads = 1;
           if (info.status === 'progress' && info.progress) {
             const pct = Math.round(info.progress);
             $('progressFill').style.width = pct + '%';
-            $('loaderSub').textContent = `Mengunduh Bobot AI: ${pct}% (${info.file})`;
+            $('loaderSub').textContent = `Mengunduh Bobot AI: ${pct}%`;
           }
         }
       }
@@ -948,41 +954,41 @@ env.backends.onnx.wasm.numThreads = 1;
     const totalPixels = item.origW * item.origH;
     const { tW, tH } = getSafeTargetDimensions(item.origW, item.origH, state.scale);
 
-    // Jika file input sudah raksasa (> 1.5 MP), arahkan ke Turbo Sharpen agar browser tidak kehabisan RAM
     if (totalPixels > 1500000) {
-      $('loaderTitle').textContent = 'File Sudah HD — Menerapkan Turbo Sharpen...';
-      $('loaderSub').textContent = 'Mengoptimalkan tepi & resolusi cetak 300 DPI';
-      return await refineCanvasOutput(item.origUrl, tW, tH);
+      $('loaderTitle').textContent = 'File Sudah HD — Menerapkan AMD CAS Sharpen...';
+      $('loaderSub').textContent = 'Mengoptimalkan ketajaman tepi & metadata cetak 300 DPI';
+      return await applyNaturalRealismAndCas(item.origUrl, tW, tH, true);
     }
 
     const upscaler = await getSwin2SrPipeline();
 
-    $('loaderTitle').textContent = 'AI Swin2SR Membangun Ulang Detail Wajah...';
-    $('loaderSub').textContent = 'Jaringan saraf sedang merekonstruksi tekstur & ketajaman (10–25 detik)...';
-    $('progressFill').style.width = '85%';
+    $('loaderTitle').textContent = 'AI Swin2SR Membangun Ulang Struktur Wajah...';
+    $('loaderSub').textContent = 'Tahap 1/2: Rekonstruksi jaringan saraf (10–25 detik)...';
+    $('progressFill').style.width = '75%';
 
-    // Beri jeda 50ms agar UI loading muncul sebelum komputasi berat dimulai
     await new Promise(r => setTimeout(r, 50));
 
-// Jalankan inferensi Super-Resolution 4x
-const rawOutput = await upscaler(item.origUrl);
-const aiCanvas = rawOutput.toCanvas();
-const stdCanvas = document.createElement('canvas');
-stdCanvas.width = aiCanvas.width;
-stdCanvas.height = aiCanvas.height;
-stdCanvas.getContext('2d').drawImage(aiCanvas, 0, 0);
-const aiDataUrl = stdCanvas.toDataURL('image/png');
+    const rawOutput = await upscaler(item.origUrl);
+    const aiCanvas = rawOutput.toCanvas();
+    const stdCanvas = document.createElement('canvas');
+    stdCanvas.width = aiCanvas.width;
+    stdCanvas.height = aiCanvas.height;
+    stdCanvas.getContext('2d').drawImage(aiCanvas, 0, 0);
+    const aiDataUrl = stdCanvas.toDataURL('image/png');
 
-    $('loaderTitle').textContent = 'Penyempurnaan Ketajaman Mikro & 300 DPI...';
+    $('loaderTitle').textContent = 'Menerapkan Natural Skin Texture & Micro-Detail...';
+    $('loaderSub').textContent = 'Tahap 2/2: Menghilangkan efek licin & injeksi 300 DPI...';
     $('progressFill').style.width = '100%';
+    await new Promise(r => setTimeout(r, 30));
 
-    return await refineCanvasOutput(aiDataUrl, tW, tH);
+    // isCasMode = false karena AI sudah membangun ulang struktur piksel, kita tinggal menyuntikkan micro-detail & natural grain
+    return await applyNaturalRealismAndCas(aiDataUrl, tW, tH, false);
   }
 
   // =========================================================================
-  // POST-PROCESSING: UNSHARP MASKING & AUTO-CONTRAST PRESISI
+  // MESIN 2: MULTI-RADIUS UNSHARP MASK, AMD CAS & NATURAL MICRO-GRAIN
   // =========================================================================
-  async function refineCanvasOutput(sourceUrl, targetW, targetH) {
+  async function applyNaturalRealismAndCas(sourceUrl, targetW, targetH, isInstantCasMode) {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
@@ -994,9 +1000,10 @@ const aiDataUrl = stdCanvas.toDataURL('image/png');
         let curW = img.width;
         let curH = img.height;
 
+        // Progressive Lanczos-style Multi-Step Resize jika ukuran belum sesuai target
         while (curW < targetW) {
-          const nextW = Math.min(targetW, Math.round(curW * 1.5));
-          const nextH = Math.min(targetH, Math.round(curH * 1.5));
+          const nextW = Math.min(targetW, Math.round(curW * 1.4));
+          const nextH = Math.min(targetH, Math.round(curH * 1.4));
           const stepCanvas = document.createElement('canvas');
           stepCanvas.width = nextW;
           stepCanvas.height = nextH;
@@ -1025,27 +1032,69 @@ const aiDataUrl = stdCanvas.toDataURL('image/png');
         const data = imgData.data;
         const copy = new Uint8ClampedArray(data);
 
-        // Unsharp Masking aktif pada seluruh detail mikro tanpa terblokir threshold berlebihan
-        const sharpAmount = (state.sharpness / 100) * 0.85;
-        const hdrBoost = state.hdr ? 1.07 : 1.0;
+        // Radius otomatis menyesuaikan skala pembesaran agar lintas blok piksel!
+        const radius = isInstantCasMode
+          ? Math.max(2, Math.round(state.scale * 0.75))
+          : 2;
 
-        for (let y = 1; y < targetH - 1; y++) {
-          for (let x = 1; x < targetW - 1; x++) {
+        // Kekuatan penajaman
+        const sharpGain = isInstantCasMode
+          ? (state.sharpness / 100) * 1.85
+          : (state.sharpness / 100) * 0.95;
+
+        // Tekstur mikro sensor kamera (menghilangkan efek plastik/lukisan pada kulit wajah)
+        const grainStrength = (state.grain / 100) * 7.5;
+
+        // Pseudo-random cepat deterministik untuk natural film/sensor grain
+        let seed = 1337;
+        function fastRand() {
+          seed = (seed * 16807) % 2147483647;
+          return (seed - 1) / 2147483646 - 0.5;
+        }
+
+        for (let y = radius; y < targetH - radius; y++) {
+          for (let x = radius; x < targetW - radius; x++) {
             const idx = (y * targetW + x) * 4;
+            const noise = grainStrength > 0 ? fastRand() * grainStrength : 0;
+
             for (let c = 0; c < 3; c++) {
               const center = copy[idx + c];
-              const top = copy[((y - 1) * targetW + x) * 4 + c];
-              const bottom = copy[((y + 1) * targetW + x) * 4 + c];
-              const left = copy[(y * targetW + (x - 1)) * 4 + c];
-              const right = copy[(y * targetW + (x + 1)) * 4 + c];
 
-              const blur = (top + bottom + left + right) * 0.25;
-              const edgeDiff = center - blur;
+              // Sampel 8 arah pada jarak radius (menangkap tepi mata, rambut, janggut)
+              const n = copy[((y - radius) * targetW + x) * 4 + c];
+              const s = copy[((y + radius) * targetW + x) * 4 + c];
+              const w = copy[(y * targetW + (x - radius)) * 4 + c];
+              const e = copy[(y * targetW + (x + radius)) * 4 + c];
+              const nw = copy[((y - radius) * targetW + (x - radius)) * 4 + c];
+              const ne = copy[((y - radius) * targetW + (x + radius)) * 4 + c];
+              const sw = copy[((y + radius) * targetW + (x - radius)) * 4 + c];
+              const se = copy[((y + radius) * targetW + (x + radius)) * 4 + c];
 
-              let val = center + edgeDiff * sharpAmount;
-              if (state.hdr) {
-                val = ((val / 255 - 0.5) * hdrBoost + 0.5) * 255;
+              // AMD Contrast-Adaptive Sharpening (CAS) Weighting
+              const minVal = Math.min(center, n, s, w, e);
+              const maxVal = Math.max(center, n, s, w, e);
+              const localContrast = (maxVal - minVal) / 255;
+
+              // Bobot adaptif: menajamkan detail sedang, melindungi tepi ekstrem dari halo putih
+              const adaptiveWeight = isInstantCasMode
+                ? sharpGain * (1.0 - localContrast * 0.45)
+                : sharpGain * (0.65 + localContrast * 0.35);
+
+              const localAvg = (n + s + w + e) * 0.15 + (nw + ne + sw + se) * 0.10;
+              const detail = center - localAvg;
+
+              let val = center + detail * adaptiveWeight;
+
+              // Natural S-Curve Micro-Contrast (menjaga warna kulit tetap alami, tidak oranye)
+              if (state.naturalTone) {
+                const norm = val / 255;
+                const sCurve = norm - 0.035 * Math.sin(2 * Math.PI * norm);
+                val = sCurve * 255;
               }
+
+              // Tambahkan natural luminance micro-grain (lebih terasa pada midtone seperti kulit)
+              val += noise;
+
               data[idx + c] = Math.max(0, Math.min(255, val));
             }
           }
@@ -1092,7 +1141,7 @@ const aiDataUrl = stdCanvas.toDataURL('image/png');
     if (!item) return;
 
     $('loaderOverlay').style.display = 'flex';
-    $('progressFill').style.width = '5%';
+    $('progressFill').style.width = '10%';
     $('progressTrack').style.display = state.engine === 'swin2sr_ai' ? 'block' : 'none';
 
     try {
@@ -1102,9 +1151,10 @@ const aiDataUrl = stdCanvas.toDataURL('image/png');
       if (state.engine === 'swin2sr_ai') {
         outputUrl = await processSwin2SrUpscale(item);
       } else if (state.engine === 'fast_local') {
-        $('loaderTitle').textContent = 'Memproses Turbo Deconvolution Sharpen...';
-        $('loaderSub').textContent = `Meningkatkan resolusi ${state.scale}x + 300 DPI`;
-        outputUrl = await refineCanvasOutput(item.origUrl, tW, tH);
+        $('loaderTitle').textContent = 'Memproses AMD CAS Adaptive Sharpen...';
+        $('loaderSub').textContent = `Menajamkan detail lintas blok (${state.scale}x) + 300 DPI`;
+        await new Promise(r => setTimeout(r, 30));
+        outputUrl = await applyNaturalRealismAndCas(item.origUrl, tW, tH, true);
       } else {
         $('loaderTitle').textContent = 'Menjalankan Cloud GPU AI...';
         $('loaderSub').textContent = `Memproses ${item.name} di server GPU`;
