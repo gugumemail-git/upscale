@@ -964,10 +964,14 @@ env.backends.onnx.wasm.numThreads = 1;
     // Beri jeda 50ms agar UI loading muncul sebelum komputasi berat dimulai
     await new Promise(r => setTimeout(r, 50));
 
-    // Jalankan inferensi Super-Resolution 4x
-    const rawOutput = await upscaler(item.origUrl);
-    const aiCanvas = rawOutput.toCanvas();
-    const aiDataUrl = aiCanvas.toDataURL('image/png');
+// Jalankan inferensi Super-Resolution 4x
+const rawOutput = await upscaler(item.origUrl);
+const aiCanvas = rawOutput.toCanvas();
+const stdCanvas = document.createElement('canvas');
+stdCanvas.width = aiCanvas.width;
+stdCanvas.height = aiCanvas.height;
+stdCanvas.getContext('2d').drawImage(aiCanvas, 0, 0);
+const aiDataUrl = stdCanvas.toDataURL('image/png');
 
     $('loaderTitle').textContent = 'Penyempurnaan Ketajaman Mikro & 300 DPI...';
     $('progressFill').style.width = '100%';
